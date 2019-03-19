@@ -1,0 +1,5 @@
+build
+.vscode/
+.travis.yml
+.DS_Store
+
