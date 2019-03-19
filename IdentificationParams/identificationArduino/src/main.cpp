@@ -98,6 +98,7 @@ void sendMsg(){
   /* Envoit du message Json sur le port seriel */
   StaticJsonDocument<200> doc;
   // elements du message
+  doc["time"] = millis();
   doc["pot_vex"] = analogRead(POTPIN);
   doc["voltage"] = __AX__.getVoltage();
   doc["current"] = __AX__.getCurrent(); 
