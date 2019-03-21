@@ -3,8 +3,9 @@
 
 #include <QObject>
 #include <QSerialPort>
-class SerialProtocol : public QObject{
 
+// Classe permettant de cree une communication serielle
+class SerialProtocol : public QObject{
     Q_OBJECT
 
 public:

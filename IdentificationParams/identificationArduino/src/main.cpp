@@ -15,18 +15,18 @@
 #define POTPIN          A5  // Port analogique pour le potentiometre
 
 /*---------------------------- variables globales ---------------------------*/
-ArduinoX __AX__; // objet arduinoX
-MegaServo __servo__; // objet servomoteur
-VexQuadEncoder __vex__; // encodeur vex
+ArduinoX AX_; // objet arduinoX
+MegaServo servo_; // objet servomoteur
+VexQuadEncoder vex_; // encodeur vex
 
-volatile bool __shouldSend__ = false;  // drapeau prêt à envoer un message
-volatile bool __shouldRead__ = false;  // drapeau prêt à lire un message
-volatile bool __shouldPulse__ = false; // drapeau pour effectuer un pulse
+volatile bool shouldSend_ = false;  // drapeau prêt à envoer un message
+volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
+volatile bool shouldPulse_ = false; // drapeau pour effectuer un pulse
 
-SoftTimer __timerSendMsg__;    // chronometre d'envoie de messages
-SoftTimer __timerPulse__;      // chronometre pour la duree d'un pulse
+SoftTimer timerSendMsg_;    // chronometre d'envoie de messages
+SoftTimer timerPulse_;      // chronometre pour la duree d'un pulse
 
-uint16_t __pulseTime__ = 0; // temps dun pulse en ms
+uint16_t pulseTime_ = 0; // temps dun pulse en ms
 float __pulsePWM__ = 0;     // Amplitude de la tension au moteur [-1,1]
 
 /*------------------------- Prototypes de fonctions -------------------------*/
@@ -42,56 +42,56 @@ void serialEvent();
 
 void setup() {
   Serial.begin(BAUD); // initialisation de la communication serielle
-  __AX__.init(); // initialisation de la carte ArduinoX 
-  __vex__.init(2,3);// initialisation de l'encodeur VEX
-  attachInterrupt(__vex__.getPinInt(), []{__vex__.isr();}, FALLING);
+  AX_.init(); // initialisation de la carte ArduinoX 
+  vex_.init(2,3);// initialisation de l'encodeur VEX
+  attachInterrupt(vex_.getPinInt(), []{vex_.isr();}, FALLING);
   
   // Chronometre envoie message
-  __timerSendMsg__.setDelay(UPDATE_PERIODE);
-  __timerSendMsg__.setCallback(timerCallback);
-  __timerSendMsg__.enable();
+  timerSendMsg_.setDelay(UPDATE_PERIODE);
+  timerSendMsg_.setCallback(timerCallback);
+  timerSendMsg_.enable();
 
   // Chronometre duration pulse
-  __timerPulse__.setCallback(endPulse);
+  timerPulse_.setCallback(endPulse);
 }
 
 /* Fonction boucle infinie*/
 void loop() {
-  if(__shouldRead__){
+  if(shouldRead_){
     readMsg();
   }
-  if(__shouldSend__){
+  if(shouldSend_){
     sendMsg();
   }
-  if(__shouldPulse__){
+  if(shouldPulse_){
     startPulse();
   }
   // Mise a jour des chronometres
-  __timerSendMsg__.update();
-  __timerPulse__.update();
+  timerSendMsg_.update();
+  timerPulse_.update();
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
 
-void serialEvent(){__shouldRead__ = true;}
+void serialEvent(){shouldRead_ = true;}
 
-void timerCallback(){__shouldSend__ = true;}
+void timerCallback(){shouldSend_ = true;}
 
 void startPulse(){
   /* Demarrage d'un pulse */
-  __timerPulse__.setDelay(__pulseTime__);
-  __timerPulse__.enable();
-  __timerPulse__.setRepetition(1);
-  __AX__.setSpeedMotor(0,__pulsePWM__);
-  __AX__.setSpeedMotor(1,__pulsePWM__);
-  __shouldPulse__ = false;
+  timerPulse_.setDelay(pulseTime_);
+  timerPulse_.enable();
+  timerPulse_.setRepetition(1);
+  AX_.setSpeedMotor(0,__pulsePWM__);
+  AX_.setSpeedMotor(1,__pulsePWM__);
+  shouldPulse_ = false;
 }
 
 void endPulse(){
   /* Rappel du chronometre */
-  __AX__.setSpeedMotor(0,0);
-  __AX__.setSpeedMotor(1,0);
-  __timerPulse__.disable();
+  AX_.setSpeedMotor(0,0);
+  AX_.setSpeedMotor(1,0);
+  timerPulse_.disable();
 }
 
 void sendMsg(){
@@ -100,16 +100,16 @@ void sendMsg(){
   // elements du message
   doc["time"] = millis();
   doc["pot_vex"] = analogRead(POTPIN);
-  doc["voltage"] = __AX__.getVoltage();
-  doc["current"] = __AX__.getCurrent(); 
+  doc["voltage"] = AX_.getVoltage();
+  doc["current"] = AX_.getCurrent(); 
   doc["pulsePWM"] = __pulsePWM__;
-  doc["pulseTime"] = __pulseTime__;
-  doc["pulse"] = __shouldPulse__;
+  doc["pulseTime"] = pulseTime_;
+  doc["pulse"] = shouldPulse_;
   // Serialisation
   serializeJson(doc, Serial);
   // Envoit
   Serial.println();
-  __shouldSend__ = false;
+  shouldSend_ = false;
 }
 
 void readMsg(){
@@ -119,7 +119,7 @@ void readMsg(){
 
   // Lecture sur le port Seriel
   DeserializationError error = deserializeJson(doc, Serial);;
-  __shouldRead__ = false;
+  shouldRead_ = false;
 
   // Si erreur dans le message
   if (error) {
@@ -136,11 +136,11 @@ void readMsg(){
 
   parse_msg = doc["pulseTime"];
   if(!parse_msg.isNull()){
-     __pulseTime__ = doc["pulseTime"];
+     pulseTime_ = doc["pulseTime"];
   }
 
   parse_msg = doc["pulse"];
   if(!parse_msg.isNull()){
-     __shouldPulse__ = doc["pulse"];
+     shouldPulse_ = doc["pulse"];
   }
 }

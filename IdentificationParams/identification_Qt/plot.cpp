@@ -1,7 +1,5 @@
 #include "plot.h"
 
-// Functions
-
 Plot::Plot(){
 }
 

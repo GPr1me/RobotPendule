@@ -5,6 +5,7 @@
 MainWindow::MainWindow(QString portName, int updateRate, QWidget *parent) :
     QMainWindow(parent)
 {
+    // Constructeur de la classe
     // Initialisation du UI
     ui = new Ui::MainWindow;
     ui->setupUi(this);
@@ -24,20 +25,21 @@ MainWindow::MainWindow(QString portName, int updateRate, QWidget *parent) :
     potVex.setColor(255,0,0);
     potVex.setGain(1);
 
-    /*file.setFileName(filename);
-    outStream.setDevice(&file);*/
+    // initialisation du timer
+    updateTimer_.setInterval(DEFAULT_UPDATE_RATE);
+    updateTimer_.start();
 
 }
 
-MainWindow::~MainWindow()
-{
+MainWindow::~MainWindow(){
+    // Destructeur de la classe
     updateTimer_.stop();
     delete serialCom;
     delete ui;
 }
 
-void MainWindow::closeEvent(QCloseEvent *event)
-{
+void MainWindow::closeEvent(QCloseEvent *event){
+    // Fonction appelee lorsque la fenetre est detruite
     event->accept();
 }
 
@@ -45,26 +47,32 @@ void MainWindow::receiveFromSerial(QString msg) {
     // Fonction appelee lors de reception sur port serie
     // Accumulation des morceaux de message
     msgBuffer += msg;
+
+    //Si un message est termine
     if(msgBuffer.endsWith('\n')){
+        // Passage ASCII vers structure Json
         QJsonDocument jsonResponse = QJsonDocument::fromJson(msgBuffer.toUtf8());
+
+        // Analyse du message Json
         if(~jsonResponse.isEmpty()){
             QJsonObject jsonObj = jsonResponse.object();
-
             QString buff = jsonResponse.toJson(QJsonDocument::Indented);
             ui->textBrowser->setText(buff.mid(2,buff.length()-4));
 
-            // Plot data
+            // Affichage des donnees
             scene.clear();
             potVex.addData((jsonObj["pot_vex"].toDouble()-512.0)/5.0);
-
-
             potVex.draw(&scene);
 
+            // Fonction de reception de message (vide pour l'instant)
             msgReceived_ = msgBuffer;
             onMessageReceived(msgReceived_);
+
+            // Si les donnees doivent etre enregistrees
             if(record){
                 writer_->write(jsonObj);
             }
+            // Reinitialisation du message tampon
             msgBuffer = "";
         }
     }
@@ -89,13 +97,14 @@ void MainWindow::connectButtons(){
 }
 
 void MainWindow::connectSpinBoxes() {
-    // Fonction des spin boxes
+    // Fonction de connection des spin boxes
     connect(ui->DurationBox, SIGNAL(valueChanged(int)), this, SLOT(sendPulseSetting()));
     connect(ui->PWMBox, SIGNAL(valueChanged(double)), this, SLOT(sendPulseSetting()));
 
 }
 
 void MainWindow::sendPulseSetting(){
+    // Fonction pour envoyer les paramettre de pulse
     double PWM_val = ui->PWMBox->value();
     int duration_val = ui->DurationBox->value();
     QJsonObject jsonObject
@@ -109,6 +118,7 @@ void MainWindow::sendPulseSetting(){
 }
 
 void MainWindow::sendPulseStart(){
+    // Fonction pour envoyer la commande de pulse
     QJsonObject jsonObject
     {
         {"pulse", 1}
@@ -131,6 +141,7 @@ void MainWindow::setUpdateRate(int rateMs) {
 }
 
 void MainWindow::manageRecording(int stateButton){
+    // Fonction qui determine l'etat du bouton
     if(stateButton == 2){
         startRecording();
     }
@@ -140,11 +151,14 @@ void MainWindow::manageRecording(int stateButton){
 }
 
 void MainWindow::startRecording(){
+    // Creation d'un nouveau fichier csv
     record = true;
-    writer_ = new CsvWriter();
+    writer_ = new CsvWriter("/home/pi/Desktop/");
+    ui->label_pathCSV->setText(writer_->folder+writer_->filename);
 }
 
 void MainWindow::stopRecording(){
+    // Fonction permettant d'arreter l'ecriture
     record = false;
     delete writer_;
 }

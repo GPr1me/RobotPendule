@@ -3,16 +3,18 @@
 
 #include <QMainWindow>
 #include <QTimer>
-#include "serialprotocol.h"
-#include "plot.h"
 #include <QCloseEvent>
 #include <QDebug>
 #include <QtWidgets>
 #include <QJsonObject>
 #include <QJsonDocument>
 
+// Propres librairies
 #include "csvwriter.h"
+#include "serialprotocol.h"
+#include "plot.h"
 
+// Classe definissant l'application
 namespace Ui {
 class MainWindow;
 }
@@ -22,8 +24,8 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    int TIMEOUT_MS = 100; // ms
-    int DEFAULT_UPDATE_RATE = 100; // ms
+    int TIMEOUT_MS = 100;
+    int DEFAULT_UPDATE_RATE = 1000;
     const qint32 BAUD_RATE = 115200;
 
     explicit MainWindow(QString portName, int updateRate, QWidget *parent = 0);

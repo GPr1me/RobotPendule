@@ -7,20 +7,20 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 
+//Classe permettant d'enregistrer les messages Json en .csv
 class CsvWriter: public QObject
 {
     Q_OBJECT
 
 public:
-    CsvWriter();
+    CsvWriter(QString folder);
     ~CsvWriter();
     void write(QJsonObject);
     void close();
-
+    QString folder;
+    QString filename;
 private:
     void setHeader(QJsonObject);
-    QString folder = "/home/pi/Desktop/";
-    QString filename = "Data.csv";
     QFile file;
     QTextStream outStream;
     bool firstLine = true;

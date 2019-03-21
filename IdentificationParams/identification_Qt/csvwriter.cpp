@@ -1,5 +1,6 @@
 #include "csvwriter.h"
-CsvWriter::CsvWriter(){
+CsvWriter::CsvWriter(QString folder_name){
+    folder = folder_name;
     filename = QTime::currentTime().toString();
     file.setFileName(folder + filename + ".csv");
     outStream.setDevice(&file);

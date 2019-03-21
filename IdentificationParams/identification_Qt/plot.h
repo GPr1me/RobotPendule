@@ -1,10 +1,12 @@
 #ifndef PLOT_H
 #define PLOT_H
+
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QGraphicsItem>
 #include <QPen>
 
+// Classe pour afficher des graphes simples
 class Plot: public QObject
 {
     Q_OBJECT
@@ -22,9 +24,5 @@ private:
     int dataBufferLen;
     QVector<double> data;
     QPen pen;
-
-
 };
-
-
 #endif // PLOT_H

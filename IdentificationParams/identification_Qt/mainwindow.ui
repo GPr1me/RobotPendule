@@ -6,43 +6,102 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>540</width>
-    <height>375</height>
+    <width>622</width>
+    <height>537</height>
    </rect>
   </property>
   <property name="acceptDrops">
    <bool>false</bool>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Interface Identification</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="3" column="0">
+    <item row="3" column="0" colspan="2">
+     <widget class="QCheckBox" name="checkBox">
+      <property name="text">
+       <string>Enregistrement des donnees sous:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="0">
      <widget class="QLabel" name="label">
       <property name="text">
        <string>Tension [-1,1]</string>
       </property>
      </widget>
     </item>
-    <item row="10" column="0" colspan="5">
-     <widget class="QGraphicsView" name="graphicsView"/>
-    </item>
-    <item row="8" column="0" colspan="5">
-     <widget class="Line" name="line">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="0">
+    <item row="6" column="0">
      <widget class="QLabel" name="label_2">
       <property name="text">
        <string>Duree (ms)</string>
       </property>
      </widget>
     </item>
-    <item row="4" column="2">
+    <item row="5" column="1">
+     <widget class="QDoubleSpinBox" name="PWMBox">
+      <property name="minimum">
+       <double>-1.000000000000000</double>
+      </property>
+      <property name="maximum">
+       <double>1.000000000000000</double>
+      </property>
+      <property name="singleStep">
+       <double>0.100000000000000</double>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="3" rowspan="6">
+     <widget class="QTextBrowser" name="textBrowser">
+      <property name="font">
+       <font>
+        <pointsize>9</pointsize>
+       </font>
+      </property>
+     </widget>
+    </item>
+    <item row="11" column="0" colspan="4">
+     <widget class="Line" name="line">
+      <property name="orientation">
+       <enum>Qt::Horizontal</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="3">
+     <widget class="QLabel" name="label_4">
+      <property name="text">
+       <string>Messages Json de l'Arduino:</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="12" column="0" colspan="4">
+     <widget class="QLabel" name="label_3">
+      <property name="text">
+       <string>Donnees brutes du potentiometre VEX:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="13" column="0" colspan="4">
+     <widget class="QGraphicsView" name="graphicsView"/>
+    </item>
+    <item row="4" column="0" colspan="2">
+     <widget class="QLabel" name="label_pathCSV">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textFormat">
+       <enum>Qt::AutoText</enum>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="1">
      <widget class="QSpinBox" name="DurationBox">
       <property name="keyboardTracking">
        <bool>false</bool>
@@ -58,39 +117,17 @@
       </property>
      </widget>
     </item>
-    <item row="2" column="0" colspan="3">
+    <item row="7" column="0" colspan="2">
      <widget class="QPushButton" name="pulseButton">
       <property name="text">
-       <string>PULSE</string>
+       <string>Commande de pulse</string>
       </property>
      </widget>
     </item>
-    <item row="1" column="0">
-     <widget class="QCheckBox" name="checkBox">
-      <property name="text">
-       <string>Enregistrement des donnees</string>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="4" rowspan="4">
-     <widget class="QTextBrowser" name="textBrowser">
-      <property name="font">
-       <font>
-        <pointsize>9</pointsize>
-       </font>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="2">
-     <widget class="QDoubleSpinBox" name="PWMBox">
-      <property name="minimum">
-       <double>-1.000000000000000</double>
-      </property>
-      <property name="maximum">
-       <double>1.000000000000000</double>
-      </property>
-      <property name="singleStep">
-       <double>0.100000000000000</double>
+    <item row="3" column="2" rowspan="7">
+     <widget class="Line" name="line_2">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
       </property>
      </widget>
     </item>
