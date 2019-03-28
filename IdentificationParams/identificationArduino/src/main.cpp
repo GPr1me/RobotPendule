@@ -17,17 +17,24 @@
 /*---------------------------- variables globales ---------------------------*/
 ArduinoX AX_; // objet arduinoX
 MegaServo servo_; // objet servomoteur
-VexQuadEncoder vex_; // encodeur vex
+VexQuadEncoder vexEncoder_; // encodeur vex
+IMU9DOF imu_; // encodeur vex
 
 volatile bool shouldSend_ = false;  // drapeau prêt à envoer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
 volatile bool shouldPulse_ = false; // drapeau pour effectuer un pulse
+volatile bool isInPulse_ = false; // drapeau pour effectuer un pulse
 
 SoftTimer timerSendMsg_;    // chronometre d'envoie de messages
 SoftTimer timerPulse_;      // chronometre pour la duree d'un pulse
 
 uint16_t pulseTime_ = 0; // temps dun pulse en ms
-float __pulsePWM__ = 0;     // Amplitude de la tension au moteur [-1,1]
+float pulsePWM_ = 0;     // Amplitude de la tension au moteur [-1,1]
+
+
+float Axyz[3]; // Accelerometre
+float Gxyz[3]; // Giroscope
+float Mxyz[3]; // Magnetometre
 
 /*------------------------- Prototypes de fonctions -------------------------*/
 
@@ -43,8 +50,9 @@ void serialEvent();
 void setup() {
   Serial.begin(BAUD); // initialisation de la communication serielle
   AX_.init(); // initialisation de la carte ArduinoX 
-  vex_.init(2,3);// initialisation de l'encodeur VEX
-  attachInterrupt(vex_.getPinInt(), []{vex_.isr();}, FALLING);
+  imu_.init(); // initialisation de la centrale inertielle
+  vexEncoder_.init(2,3);// initialisation de l'encodeur VEX
+  attachInterrupt(vexEncoder_.getPinInt(), []{vexEncoder_.isr();}, FALLING);
   
   // Chronometre envoie message
   timerSendMsg_.setDelay(UPDATE_PERIODE);
@@ -82,9 +90,10 @@ void startPulse(){
   timerPulse_.setDelay(pulseTime_);
   timerPulse_.enable();
   timerPulse_.setRepetition(1);
-  AX_.setSpeedMotor(0,__pulsePWM__);
-  AX_.setSpeedMotor(1,__pulsePWM__);
+  AX_.setSpeedMotor(0,pulsePWM_);
+  AX_.setSpeedMotor(1,pulsePWM_);
   shouldPulse_ = false;
+  isInPulse_ = true;
 }
 
 void endPulse(){
@@ -92,6 +101,7 @@ void endPulse(){
   AX_.setSpeedMotor(0,0);
   AX_.setSpeedMotor(1,0);
   timerPulse_.disable();
+  isInPulse_ = false;
 }
 
 void sendMsg(){
@@ -99,12 +109,16 @@ void sendMsg(){
   StaticJsonDocument<200> doc;
   // elements du message
   doc["time"] = millis();
-  doc["pot_vex"] = analogRead(POTPIN);
+  doc["potVex"] = analogRead(POTPIN);
+  doc["encVex"] = vexEncoder_.getCount();
   doc["voltage"] = AX_.getVoltage();
   doc["current"] = AX_.getCurrent(); 
-  doc["pulsePWM"] = __pulsePWM__;
+  doc["pulsePWM"] = pulsePWM_;
   doc["pulseTime"] = pulseTime_;
-  doc["pulse"] = shouldPulse_;
+  doc["inPulse"] = isInPulse_;
+  doc["accelX"] = imu_.getAccelX();
+  doc["accelY"] = imu_.getAccelY();
+  doc["accelZ"] = imu_.getAccelZ();
   // Serialisation
   serializeJson(doc, Serial);
   // Envoit
@@ -131,7 +145,7 @@ void readMsg(){
   // Analyse du message
   parse_msg = doc["pulsePWM"];
   if(!parse_msg.isNull()){
-     __pulsePWM__ = doc["pulsePWM"];
+     pulsePWM_ = doc["pulsePWM"];
   }
 
   parse_msg = doc["pulseTime"];

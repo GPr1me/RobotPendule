@@ -1,7 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-
 MainWindow::MainWindow(QString portName, int updateRate, QWidget *parent) :
     QMainWindow(parent)
 {
@@ -23,7 +22,15 @@ MainWindow::MainWindow(QString portName, int updateRate, QWidget *parent) :
     // Affichage de donnees
     potVex.setDataLen(500);
     potVex.setColor(255,0,0);
-    potVex.setGain(1);
+    potVex.setGain(.2);
+
+    encVex.setDataLen(500);
+    encVex.setColor(0,0,255);
+    encVex.setGain(1);
+
+    accelY.setDataLen(500);
+    accelY.setColor(0,255,0);
+    accelY.setGain(100);
 
     // initialisation du timer
     updateTimer_.setInterval(DEFAULT_UPDATE_RATE);
@@ -61,8 +68,20 @@ void MainWindow::receiveFromSerial(QString msg) {
 
             // Affichage des donnees
             scene.clear();
-            potVex.addData((jsonObj["pot_vex"].toDouble()-512.0)/5.0);
-            potVex.draw(&scene);
+            potVex.addData((jsonObj["potVex"].toDouble()-512.0));
+            if(ui->checkBox_pot->isChecked()){
+                potVex.draw(&scene);
+            }
+            encVex.addData((jsonObj["encVex"].toDouble()));
+            if(ui->checkBox_enc->isChecked()){
+                encVex.draw(&scene);
+            }
+            accelY.addData((jsonObj["accelY"].toDouble()));
+            if(ui->checkBox_acc->isChecked()){
+                accelY.draw(&scene);
+            }
+
+
 
             // Fonction de reception de message (vide pour l'instant)
             msgReceived_ = msgBuffer;

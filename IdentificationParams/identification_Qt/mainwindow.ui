@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>622</width>
-    <height>537</height>
+    <width>752</width>
+    <height>534</height>
    </rect>
   </property>
   <property name="acceptDrops">
@@ -78,16 +78,6 @@
       </property>
      </widget>
     </item>
-    <item row="12" column="0" colspan="4">
-     <widget class="QLabel" name="label_3">
-      <property name="text">
-       <string>Donnees brutes du potentiometre VEX:</string>
-      </property>
-     </widget>
-    </item>
-    <item row="13" column="0" colspan="4">
-     <widget class="QGraphicsView" name="graphicsView"/>
-    </item>
     <item row="4" column="0" colspan="2">
      <widget class="QLabel" name="label_pathCSV">
       <property name="frameShape">
@@ -117,6 +107,13 @@
       </property>
      </widget>
     </item>
+    <item row="3" column="2" rowspan="7">
+     <widget class="Line" name="line_2">
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+    </item>
     <item row="7" column="0" colspan="2">
      <widget class="QPushButton" name="pulseButton">
       <property name="text">
@@ -124,12 +121,40 @@
       </property>
      </widget>
     </item>
-    <item row="3" column="2" rowspan="7">
-     <widget class="Line" name="line_2">
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
+    <item row="14" column="0" colspan="3">
+     <widget class="QLabel" name="label_3">
+      <property name="text">
+       <string>Donnees brutes de l'angle:</string>
       </property>
      </widget>
+    </item>
+    <item row="14" column="3">
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QCheckBox" name="checkBox_pot">
+        <property name="text">
+         <string>Potentiometre</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_enc">
+        <property name="text">
+         <string>Encodeur</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBox_acc">
+        <property name="text">
+         <string>Acceleration</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item row="16" column="0" colspan="4">
+     <widget class="QGraphicsView" name="graphicsView"/>
     </item>
    </layout>
   </widget>

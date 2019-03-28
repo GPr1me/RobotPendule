@@ -60,6 +60,8 @@ private:
     SerialProtocol* serialCom;
     QGraphicsScene scene;
     Plot potVex;
+    Plot encVex;
+    Plot accelY;
 
 
 protected:
