@@ -124,37 +124,22 @@
     <item row="14" column="0" colspan="3">
      <widget class="QLabel" name="label_3">
       <property name="text">
-       <string>Donnees brutes de l'angle:</string>
+       <string>Donnees brutes de la cle:</string>
       </property>
      </widget>
     </item>
-    <item row="14" column="3">
-     <layout class="QHBoxLayout" name="horizontalLayout_3">
-      <item>
-       <widget class="QCheckBox" name="checkBox_pot">
-        <property name="text">
-         <string>Potentiometre</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="checkBox_enc">
-        <property name="text">
-         <string>Encodeur</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="checkBox_acc">
-        <property name="text">
-         <string>Acceleration</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item row="16" column="0" colspan="4">
+    <item row="15" column="0" colspan="4">
      <widget class="QGraphicsView" name="graphicsView"/>
+    </item>
+    <item row="14" column="3">
+     <widget class="QLineEdit" name="JsonKey">
+      <property name="text">
+       <string>potVex</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

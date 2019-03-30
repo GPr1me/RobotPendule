@@ -37,3 +37,7 @@ void Plot::draw(QGraphicsScene* scene){
 void Plot::setGain(double gain_){
     gain = gain_;
 }
+
+void Plot::clear(){
+    data.clear();
+}

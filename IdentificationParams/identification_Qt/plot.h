@@ -18,6 +18,7 @@ public:
     void addData(double);
     void draw(QGraphicsScene *);
     void setGain(double);
+    void clear();
 
 private:
     double gain = 1;

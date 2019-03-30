@@ -119,6 +119,9 @@ void sendMsg(){
   doc["accelX"] = imu_.getAccelX();
   doc["accelY"] = imu_.getAccelY();
   doc["accelZ"] = imu_.getAccelZ();
+  doc["gyroX"] = imu_.getGyroX();
+  doc["gyroY"] = imu_.getGyroY();
+  doc["gyroZ"] = imu_.getGyroZ();
   // Serialisation
   serializeJson(doc, Serial);
   // Envoit

@@ -14,23 +14,17 @@ MainWindow::MainWindow(QString portName, int updateRate, QWidget *parent) :
     connectTimers(updateRate);
     connectButtons();
     connectSpinBoxes();
+    connectTextInputs();
 
     // Protocol seriel
     serialCom = new SerialProtocol(portName, BAUD_RATE);
     connectSerialPortRead();
 
     // Affichage de donnees
-    potVex.setDataLen(500);
-    potVex.setColor(255,0,0);
-    potVex.setGain(.2);
+    plot.setDataLen(500);
+    plot.setColor(255,0,0);
+    plot.setGain(.2);
 
-    encVex.setDataLen(500);
-    encVex.setColor(0,0,255);
-    encVex.setGain(1);
-
-    accelY.setDataLen(500);
-    accelY.setColor(0,255,0);
-    accelY.setGain(100);
 
     // initialisation du timer
     updateTimer_.setInterval(DEFAULT_UPDATE_RATE);
@@ -68,21 +62,11 @@ void MainWindow::receiveFromSerial(QString msg) {
 
             // Affichage des donnees
             scene.clear();
-            potVex.addData((jsonObj["potVex"].toDouble()-512.0));
-            if(ui->checkBox_pot->isChecked()){
-                potVex.draw(&scene);
-            }
-            encVex.addData((jsonObj["encVex"].toDouble()));
-            if(ui->checkBox_enc->isChecked()){
-                encVex.draw(&scene);
-            }
-            accelY.addData((jsonObj["accelY"].toDouble()));
-            if(ui->checkBox_acc->isChecked()){
-                accelY.draw(&scene);
-            }
 
-
-
+            if(jsonObj.contains(JsonKey)){
+                plot.addData((jsonObj[JsonKey].toDouble()));
+                plot.draw(&scene);
+            }
             // Fonction de reception de message (vide pour l'instant)
             msgReceived_ = msgBuffer;
             onMessageReceived(msgReceived_);
@@ -91,9 +75,9 @@ void MainWindow::receiveFromSerial(QString msg) {
             if(record){
                 writer_->write(jsonObj);
             }
-            // Reinitialisation du message tampon
-            msgBuffer = "";
         }
+        // Reinitialisation du message tampon
+        msgBuffer = "";
     }
 }
 
@@ -119,8 +103,19 @@ void MainWindow::connectSpinBoxes() {
     // Fonction de connection des spin boxes
     connect(ui->DurationBox, SIGNAL(valueChanged(int)), this, SLOT(sendPulseSetting()));
     connect(ui->PWMBox, SIGNAL(valueChanged(double)), this, SLOT(sendPulseSetting()));
-
 }
+
+void MainWindow::connectTextInputs() {
+    // Fonction de connection des entrees de texte
+    connect(ui->JsonKey, SIGNAL(editingFinished()), this, SLOT(changeJsonKeyValue()));
+    JsonKey = ui->JsonKey->text();
+}
+
+void MainWindow::changeJsonKeyValue(){
+    plot.clear();
+    JsonKey = ui->JsonKey->text();
+}
+
 
 void MainWindow::sendPulseSetting(){
     // Fonction pour envoyer les paramettre de pulse

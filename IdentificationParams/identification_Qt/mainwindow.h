@@ -43,6 +43,7 @@ private slots:
     void sendPulseSetting();
     void sendPulseStart();
     void manageRecording(int);
+    void changeJsonKeyValue();
 
 private:
     void connectTimers(int updateRate);
@@ -51,6 +52,7 @@ private:
     void connectSpinBoxes();
     void startRecording();
     void stopRecording();
+    void connectTextInputs();
 
     bool record = false;
     CsvWriter* writer_;
@@ -59,9 +61,8 @@ private:
     QString msgBuffer{""};
     SerialProtocol* serialCom;
     QGraphicsScene scene;
-    Plot potVex;
-    Plot encVex;
-    Plot accelY;
+    Plot plot;
+    QString JsonKey;
 
 
 protected:
