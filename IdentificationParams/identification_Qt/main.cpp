@@ -1,13 +1,10 @@
 #include "mainwindow.h"
 #include <QApplication>
 
-QString port = "/dev/ttyACM0"; // Port de communication du Arduino
-int delay = 100; // Frequence du compteur de la fonction "onPeriodicUpdate"
-
 int main(int argc, char *argv[])
-{
+{   int delayMs = 1000;
     QApplication a(argc, argv);
-    MainWindow w(port, delay);
+    MainWindow w(delayMs);
     w.show();
     return a.exec();
 }

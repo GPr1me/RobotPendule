@@ -8,6 +8,7 @@
 #include <QtWidgets>
 #include <QJsonObject>
 #include <QJsonDocument>
+#include <QSerialPortInfo>
 
 // Propres librairies
 #include "csvwriter.h"
@@ -28,15 +29,16 @@ public:
     int DEFAULT_UPDATE_RATE = 1000;
     const qint32 BAUD_RATE = 115200;
 
-    explicit MainWindow(QString portName, int updateRate, QWidget *parent = 0);
-    virtual ~MainWindow();
+    explicit MainWindow(int updateRate, QWidget *parent = 0);
+    explicit MainWindow(QWidget *parent = 0);
+    virtual ~MainWindow() override;
     void closeEvent(QCloseEvent *event) override;
 
     void sendMessage(QString msg);
     void setUpdateRate(int rateMs);
 
-    void onPeriodicUpdate() {}
-    void onMessageReceived(QString /*msg*/) {}
+    void onPeriodicUpdate();
+    void onMessageReceived(QString);
 
 private slots:
     void receiveFromSerial(QString);
@@ -44,6 +46,7 @@ private slots:
     void sendPulseStart();
     void manageRecording(int);
     void changeJsonKeyValue();
+    void startSerialCom(QString);
 
 private:
     void connectTimers(int updateRate);
@@ -53,13 +56,15 @@ private:
     void startRecording();
     void stopRecording();
     void connectTextInputs();
+    void connectComboBox();
+    void portCensus();
 
     bool record = false;
     CsvWriter* writer_;
     QTimer updateTimer_;
     QString msgReceived_{""};
     QString msgBuffer{""};
-    SerialProtocol* serialCom;
+    SerialProtocol* serialCom=nullptr;
     QGraphicsScene scene;
     Plot plot;
     QString JsonKey;

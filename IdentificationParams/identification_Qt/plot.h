@@ -5,6 +5,8 @@
 #include <QGraphicsView>
 #include <QGraphicsItem>
 #include <QPen>
+#include <math.h>
+#include <QDebug>
 
 // Classe pour afficher des graphes simples
 class Plot: public QObject
@@ -17,11 +19,11 @@ public:
     void setDataLen(int);
     void addData(double);
     void draw(QGraphicsScene *);
-    void setGain(double);
     void clear();
 
 private:
-    double gain = 1;
+    double gain = 0;
+    double GAINCST = 70;
     int dataBufferLen;
     QVector<double> data;
     QPen pen;

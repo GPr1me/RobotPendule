@@ -52,42 +52,10 @@
       </property>
      </widget>
     </item>
-    <item row="4" column="3" rowspan="6">
-     <widget class="QTextBrowser" name="textBrowser">
-      <property name="font">
-       <font>
-        <pointsize>9</pointsize>
-       </font>
-      </property>
-     </widget>
-    </item>
     <item row="11" column="0" colspan="4">
      <widget class="Line" name="line">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="3">
-     <widget class="QLabel" name="label_4">
-      <property name="text">
-       <string>Messages Json de l'Arduino:</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-      </property>
-     </widget>
-    </item>
-    <item row="4" column="0" colspan="2">
-     <widget class="QLabel" name="label_pathCSV">
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="textFormat">
-       <enum>Qt::AutoText</enum>
       </property>
      </widget>
     </item>
@@ -124,7 +92,7 @@
     <item row="14" column="0" colspan="3">
      <widget class="QLabel" name="label_3">
       <property name="text">
-       <string>Donnees brutes de la cle:</string>
+       <string>Donnees brutes:</string>
       </property>
      </widget>
     </item>
@@ -138,6 +106,48 @@
       </property>
       <property name="alignment">
        <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="3">
+     <widget class="QLabel" name="label_4">
+      <property name="text">
+       <string>Messages Json de l'Arduino:</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="3" rowspan="7">
+     <widget class="QTextBrowser" name="textBrowser">
+      <property name="font">
+       <font>
+        <pointsize>9</pointsize>
+       </font>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="1">
+     <widget class="QComboBox" name="comboBoxPort"/>
+    </item>
+    <item row="0" column="0">
+     <widget class="QLabel" name="label_5">
+      <property name="text">
+       <string>Port:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0" colspan="2">
+     <widget class="QLabel" name="label_pathCSV">
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="textFormat">
+       <enum>Qt::AutoText</enum>
       </property>
      </widget>
     </item>

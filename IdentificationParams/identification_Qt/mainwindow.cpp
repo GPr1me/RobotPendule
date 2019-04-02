@@ -1,7 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-MainWindow::MainWindow(QString portName, int updateRate, QWidget *parent) :
+MainWindow::MainWindow(int updateRate, QWidget *parent):
     QMainWindow(parent)
 {
     // Constructeur de la classe
@@ -15,27 +15,25 @@ MainWindow::MainWindow(QString portName, int updateRate, QWidget *parent) :
     connectButtons();
     connectSpinBoxes();
     connectTextInputs();
+    connectComboBox();
 
-    // Protocol seriel
-    serialCom = new SerialProtocol(portName, BAUD_RATE);
-    connectSerialPortRead();
+    // Recensement des ports
+    portCensus();
 
     // Affichage de donnees
-    plot.setDataLen(500);
+    plot.setDataLen(250);
     plot.setColor(255,0,0);
-    plot.setGain(.2);
-
 
     // initialisation du timer
-    updateTimer_.setInterval(DEFAULT_UPDATE_RATE);
     updateTimer_.start();
-
 }
 
 MainWindow::~MainWindow(){
     // Destructeur de la classe
     updateTimer_.stop();
-    delete serialCom;
+    if(serialCom!=nullptr){
+      delete serialCom;
+    }
     delete ui;
 }
 
@@ -44,7 +42,7 @@ void MainWindow::closeEvent(QCloseEvent *event){
     event->accept();
 }
 
-void MainWindow::receiveFromSerial(QString msg) {
+void MainWindow::receiveFromSerial(QString msg){
     // Fonction appelee lors de reception sur port serie
     // Accumulation des morceaux de message
     msgBuffer += msg;
@@ -81,14 +79,13 @@ void MainWindow::receiveFromSerial(QString msg) {
     }
 }
 
-
-void MainWindow::connectTimers(int updateRate) {
+void MainWindow::connectTimers(int updateRate){
     // Fonction de connection de timers
     connect(&updateTimer_, &QTimer::timeout, this, [this]{onPeriodicUpdate();});
     updateTimer_.start(updateRate);
 }
 
-void MainWindow::connectSerialPortRead() {
+void MainWindow::connectSerialPortRead(){
     // Fonction de connection au message de la classe (serialProtocol)
     connect(serialCom, SIGNAL(newMessage(QString)), this, SLOT(receiveFromSerial(QString)));
 }
@@ -99,26 +96,49 @@ void MainWindow::connectButtons(){
     connect(ui->checkBox, SIGNAL(stateChanged(int)), this, SLOT(manageRecording(int)));
 }
 
-void MainWindow::connectSpinBoxes() {
+void MainWindow::connectSpinBoxes(){
     // Fonction de connection des spin boxes
     connect(ui->DurationBox, SIGNAL(valueChanged(int)), this, SLOT(sendPulseSetting()));
     connect(ui->PWMBox, SIGNAL(valueChanged(double)), this, SLOT(sendPulseSetting()));
 }
 
-void MainWindow::connectTextInputs() {
+void MainWindow::connectTextInputs(){
     // Fonction de connection des entrees de texte
-    connect(ui->JsonKey, SIGNAL(editingFinished()), this, SLOT(changeJsonKeyValue()));
+    connect(ui->JsonKey, SIGNAL(returnPressed()), this, SLOT(changeJsonKeyValue()));
     JsonKey = ui->JsonKey->text();
 }
 
+void MainWindow::connectComboBox(){
+    // Fonction de connection des entrees deroulantes
+    connect(ui->comboBoxPort, SIGNAL(activated(QString)), this, SLOT(startSerialCom(QString)));
+}
+
+void MainWindow::portCensus(){
+    // Fonction pour recenser les ports disponibles
+    ui->comboBoxPort->clear();
+    Q_FOREACH(QSerialPortInfo port, QSerialPortInfo::availablePorts()) {
+        ui->comboBoxPort->addItem(port.portName());
+    }
+}
+
+void MainWindow::startSerialCom(QString portName){
+    // Fonction SLOT pour demarrer la communication serielle
+    qDebug().noquote() << "Connection au port"<< portName;
+    if(serialCom!=nullptr){
+        delete serialCom;
+    }
+    serialCom = new SerialProtocol(portName, BAUD_RATE);
+    connectSerialPortRead();
+}
+
 void MainWindow::changeJsonKeyValue(){
+    // Fonction SLOT pour changer la valeur de la cle Json
     plot.clear();
     JsonKey = ui->JsonKey->text();
 }
 
-
 void MainWindow::sendPulseSetting(){
-    // Fonction pour envoyer les paramettre de pulse
+    // Fonction SLOT pour envoyer les paramettres de pulse
     double PWM_val = ui->PWMBox->value();
     int duration_val = ui->DurationBox->value();
     QJsonObject jsonObject
@@ -132,7 +152,7 @@ void MainWindow::sendPulseSetting(){
 }
 
 void MainWindow::sendPulseStart(){
-    // Fonction pour envoyer la commande de pulse
+    // Fonction SLOT pour envoyer la commande de pulse
     QJsonObject jsonObject
     {
         {"pulse", 1}
@@ -142,20 +162,23 @@ void MainWindow::sendPulseStart(){
     sendMessage(strJson);
 }
 
-
-void MainWindow::sendMessage(QString msg) {
-    // Fonction d'ecriture sur le port serie
+void MainWindow::sendMessage(QString msg){
+    // Fonction SLOT d'ecriture sur le port serie
+    if(serialCom==nullptr){
+        qDebug().noquote() <<"Erreur aucun port serie !!!";
+        return;
+    }
     serialCom->sendMessage(msg);
     qDebug().noquote() <<"Message du RPI: "  <<msg;
 }
 
-void MainWindow::setUpdateRate(int rateMs) {
+void MainWindow::setUpdateRate(int rateMs){
     // Fonction d'initialisation du chronometre
     updateTimer_.start(rateMs);
 }
 
 void MainWindow::manageRecording(int stateButton){
-    // Fonction qui determine l'etat du bouton
+    // Fonction SLOT pour determiner l'etat du bouton d'enregistrement
     if(stateButton == 2){
         startRecording();
     }
@@ -165,23 +188,24 @@ void MainWindow::manageRecording(int stateButton){
 }
 
 void MainWindow::startRecording(){
-    // Creation d'un nouveau fichier csv
+    // Fonction SLOT pour creation d'un nouveau fichier csv
     record = true;
     writer_ = new CsvWriter("/home/pi/Desktop/");
     ui->label_pathCSV->setText(writer_->folder+writer_->filename);
 }
 
 void MainWindow::stopRecording(){
-    // Fonction permettant d'arreter l'ecriture
+    // Fonction permettant d'arreter l'ecriture du CSV
     record = false;
     delete writer_;
 }
-void onMessageReceived(QString msg){
+void MainWindow::onMessageReceived(QString msg){
     // Fonction appelee lors de reception de message
-    qDebug().noquote() << "Message du Arduino: " << msg;
+    // Decommenter la ligne suivante pour deverminage
+    //qDebug().noquote() << "Message du Arduino: " << msg;
 }
 
-void onPeriodicUpdate(){
-    // Fonction appelee a intervalle
+void MainWindow::onPeriodicUpdate(){
+    // Fonction SLOT appelee a intervalle definie dans le constructeur
     qDebug().noquote() << "*";
 }
