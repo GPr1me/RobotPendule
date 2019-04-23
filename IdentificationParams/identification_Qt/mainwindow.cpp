@@ -94,6 +94,7 @@ void MainWindow::connectButtons(){
     // Fonction de connection du boutton Send
     connect(ui->pulseButton, SIGNAL(clicked()), this, SLOT(sendPulseStart()));
     connect(ui->checkBox, SIGNAL(stateChanged(int)), this, SLOT(manageRecording(int)));
+    connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(sendPID()));
 }
 
 void MainWindow::connectSpinBoxes(){
@@ -136,7 +137,17 @@ void MainWindow::changeJsonKeyValue(){
     plot.clear();
     JsonKey = ui->JsonKey->text();
 }
-
+void MainWindow::sendPID(){
+    // Fonction SLOT pour envoyer les paramettres de pulse
+    double goal = ui->lineEdit->text().toDouble();
+    QJsonObject jsonObject
+    {// pour minimiser le nombre de decimales( QString::number)
+        {"setGoal", QString::number(goal, 'f', 2)}
+    };
+    QJsonDocument doc(jsonObject);
+    QString strJson(doc.toJson(QJsonDocument::Compact));
+    sendMessage(strJson);
+}
 void MainWindow::sendPulseSetting(){
     // Fonction SLOT pour envoyer les paramettres de pulse
     double PWM_val = ui->PWMBox->value();
@@ -202,7 +213,7 @@ void MainWindow::stopRecording(){
 void MainWindow::onMessageReceived(QString msg){
     // Fonction appelee lors de reception de message
     // Decommenter la ligne suivante pour deverminage
-    //qDebug().noquote() << "Message du Arduino: " << msg;
+    qDebug().noquote() << "Message du Arduino: " << msg;
 }
 
 void MainWindow::onPeriodicUpdate(){

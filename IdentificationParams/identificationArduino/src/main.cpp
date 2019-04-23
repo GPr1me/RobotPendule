@@ -14,11 +14,16 @@
 #define MAGPIN          32  // Port numerique pour electroaimant
 #define POTPIN          A5  // Port analogique pour le potentiometre
 
+#define PASPARTOUR      64  // Nombre de pas par tour lu par l'encodeur du moteur
+#define RAPPORTVITESSE  43.7  // Rapport de vitesse de la boite de vitesse du moteur
+
 /*---------------------------- variables globales ---------------------------*/
 ArduinoX AX_; // objet arduinoX
 MegaServo servo_; // objet servomoteur
 VexQuadEncoder vexEncoder_; // encodeur vex
 IMU9DOF imu_; // encodeur vex
+
+PID pid; // PID object
 
 volatile bool shouldSend_ = false;  // drapeau prêt à envoer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
@@ -41,9 +46,25 @@ float Mxyz[3]; // Magnetometre
 void timerCallback();
 void startPulse();
 void endPulse();
-void sendMsg();
+void sendMsg(); 
 void readMsg();
 void serialEvent();
+
+double measurement(){
+  double tours = double(AX_.readEncoder(0))/(PASPARTOUR*RAPPORTVITESSE);
+  return tours;
+}
+void command(double cmd){
+  //Serial.println(cmd);
+  double lim = .5;
+  if(cmd > lim){cmd = lim;}
+  if(cmd < -lim){cmd = -lim;}
+  AX_.setSpeedMotor(0,cmd);
+}
+void goalReached(){
+  //Serial.println("goal reached!!!");
+  AX_.setSpeedMotor(0,0);
+}
 
 /*---------------------------- fonctions "Main" -----------------------------*/
 
@@ -61,6 +82,15 @@ void setup() {
 
   // Chronometre duration pulse
   timerPulse_.setCallback(endPulse);
+  
+  // SetUp PID
+  pid.setGains(0.25,0.0001 ,0);
+  pid.setMeasurementFunc(measurement);
+  pid.setCommandFunc(command);
+  pid.setAtGoalFunc(goalReached);
+  pid.setEpsilon(0.001);
+  pid.setPeriod(10);
+
 }
 
 /* Fonction boucle infinie*/
@@ -77,6 +107,7 @@ void loop() {
   // Mise a jour des chronometres
   timerSendMsg_.update();
   timerPulse_.update();
+  pid.run();
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
@@ -108,9 +139,12 @@ void sendMsg(){
   /* Envoit du message Json sur le port seriel */
   StaticJsonDocument<200> doc;
   // elements du message
+
   doc["time"] = millis();
   doc["potVex"] = analogRead(POTPIN);
   doc["encVex"] = vexEncoder_.getCount();
+  doc["goal"] = pid.getGoal();
+  doc["var"] = measurement();
   doc["voltage"] = AX_.getVoltage();
   doc["current"] = AX_.getCurrent(); 
   doc["pulsePWM"] = pulsePWM_;
@@ -122,6 +156,8 @@ void sendMsg(){
   doc["gyroX"] = imu_.getGyroX();
   doc["gyroY"] = imu_.getGyroY();
   doc["gyroZ"] = imu_.getGyroZ();
+  doc["isGoal"] = pid.isAtGoal();
+
   // Serialisation
   serializeJson(doc, Serial);
   // Envoit
@@ -146,14 +182,21 @@ void readMsg(){
   }
   
   // Analyse du message
+  parse_msg = doc["setGoal"];
+  if(!parse_msg.isNull()){
+    
+    pid.setGoal(doc["setGoal"].as<double>());
+    pid.enable();
+  }
+
   parse_msg = doc["pulsePWM"];
   if(!parse_msg.isNull()){
-     pulsePWM_ = doc["pulsePWM"];
+     pulsePWM_ = doc["pulsePWM"].as<float>();
   }
 
   parse_msg = doc["pulseTime"];
   if(!parse_msg.isNull()){
-     pulseTime_ = doc["pulseTime"];
+     pulseTime_ = doc["pulseTime"].as<float>();
   }
 
   parse_msg = doc["pulse"];

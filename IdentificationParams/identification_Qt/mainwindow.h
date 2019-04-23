@@ -47,6 +47,7 @@ private slots:
     void manageRecording(int);
     void changeJsonKeyValue();
     void startSerialCom(QString);
+    void sendPID();
 
 private:
     void connectTimers(int updateRate);
