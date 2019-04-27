@@ -22,7 +22,6 @@ private slots:
 private:
     void connectSignals();
     QSerialPort* serial_;
-    QString msgBuffer = "";
 };
 
 #endif // SERIALPROTOCOL_H

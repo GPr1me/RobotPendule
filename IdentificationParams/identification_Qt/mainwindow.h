@@ -9,6 +9,7 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QSerialPortInfo>
+#include <QtCharts>
 
 // Propres librairies
 #include "csvwriter.h"
@@ -64,11 +65,12 @@ private:
     CsvWriter* writer_;
     QTimer updateTimer_;
     QString msgReceived_{""};
-    QString msgBuffer{""};
-    SerialProtocol* serialCom=nullptr;
-    QGraphicsScene scene;
-    Plot plot;
-    QString JsonKey;
+    QString msgBuffer_{""};
+    SerialProtocol* serialCom_=nullptr;
+
+    QString JsonKey_;
+    QLineSeries series_;
+    QChart chart_;
 
 
 protected:

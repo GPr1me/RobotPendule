@@ -15,8 +15,8 @@
 #define POTPIN          A5  // Port analogique pour le potentiometre
 
 #define PASPARTOUR      64  // Nombre de pas par tour lu par l'encodeur du moteur
-#define RAPPORTVITESSE  43.7  // Rapport de vitesse de la boite de vitesse du moteur
-
+#define RAPPORTVITESSE  50  // Rapport de vitesse de la boite de vitesse du moteur
+#define dasfasdfasgasgsd  50 
 /*---------------------------- variables globales ---------------------------*/
 ArduinoX AX_; // objet arduinoX
 MegaServo servo_; // objet servomoteur
@@ -25,7 +25,7 @@ IMU9DOF imu_; // encodeur vex
 
 PID pid; // PID object
 
-volatile bool shouldSend_ = false;  // drapeau prêt à envoer un message
+volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
 volatile bool shouldPulse_ = false; // drapeau pour effectuer un pulse
 volatile bool isInPulse_ = false; // drapeau pour effectuer un pulse
@@ -50,6 +50,9 @@ void sendMsg();
 void readMsg();
 void serialEvent();
 
+
+
+// Fonctions pour le PID
 double measurement(){
   double tours = double(AX_.readEncoder(0))/(PASPARTOUR*RAPPORTVITESSE);
   return tours;
@@ -84,11 +87,11 @@ void setup() {
   timerPulse_.setCallback(endPulse);
   
   // SetUp PID
-  pid.setGains(0.25,0.0001 ,0);
+  pid.setGains(0.25,0.1 ,0);
   pid.setMeasurementFunc(measurement);
   pid.setCommandFunc(command);
   pid.setAtGoalFunc(goalReached);
-  pid.setEpsilon(0.001);
+  pid.setEpsilon(0.005);
   pid.setPeriod(10);
 
 }
@@ -144,7 +147,7 @@ void sendMsg(){
   doc["potVex"] = analogRead(POTPIN);
   doc["encVex"] = vexEncoder_.getCount();
   doc["goal"] = pid.getGoal();
-  doc["var"] = measurement();
+  doc["motorPos"] = measurement();
   doc["voltage"] = AX_.getVoltage();
   doc["current"] = AX_.getCurrent(); 
   doc["pulsePWM"] = pulsePWM_;

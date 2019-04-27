@@ -8,7 +8,16 @@ MainWindow::MainWindow(int updateRate, QWidget *parent):
     // Initialisation du UI
     ui = new Ui::MainWindow;
     ui->setupUi(this);
-    ui->graphicsView->setScene(&scene);
+
+    // Initialisation du graphique
+    ui->graph->setChart(&chart_);
+    chart_.setTitle("Donnees brutes");
+    chart_.legend()->hide();
+    chart_.addSeries(&series_);
+
+
+
+    //ui->graphicsView->setScene(&scene);
 
     // Fonctions de connections events/slots
     connectTimers(updateRate);
@@ -20,10 +29,6 @@ MainWindow::MainWindow(int updateRate, QWidget *parent):
     // Recensement des ports
     portCensus();
 
-    // Affichage de donnees
-    plot.setDataLen(250);
-    plot.setColor(255,0,0);
-
     // initialisation du timer
     updateTimer_.start();
 }
@@ -31,8 +36,8 @@ MainWindow::MainWindow(int updateRate, QWidget *parent):
 MainWindow::~MainWindow(){
     // Destructeur de la classe
     updateTimer_.stop();
-    if(serialCom!=nullptr){
-      delete serialCom;
+    if(serialCom_!=nullptr){
+      delete serialCom_;
     }
     delete ui;
 }
@@ -45,28 +50,33 @@ void MainWindow::closeEvent(QCloseEvent *event){
 void MainWindow::receiveFromSerial(QString msg){
     // Fonction appelee lors de reception sur port serie
     // Accumulation des morceaux de message
-    msgBuffer += msg;
+    msgBuffer_ += msg;
 
     //Si un message est termine
-    if(msgBuffer.endsWith('\n')){
+    if(msgBuffer_.endsWith('\n')){
         // Passage ASCII vers structure Json
-        QJsonDocument jsonResponse = QJsonDocument::fromJson(msgBuffer.toUtf8());
+        QJsonDocument jsonResponse = QJsonDocument::fromJson(msgBuffer_.toUtf8());
 
         // Analyse du message Json
         if(~jsonResponse.isEmpty()){
             QJsonObject jsonObj = jsonResponse.object();
             QString buff = jsonResponse.toJson(QJsonDocument::Indented);
+
+            // Affichage des messages Json
             ui->textBrowser->setText(buff.mid(2,buff.length()-4));
 
-            // Affichage des donnees
-            scene.clear();
-
-            if(jsonObj.contains(JsonKey)){
-                plot.addData((jsonObj[JsonKey].toDouble()));
-                plot.draw(&scene);
+            // Affichage des donnees dans le graph
+            if(jsonObj.contains(JsonKey_)){
+                double time = jsonObj["time"].toDouble();
+                series_.append(time, jsonObj[JsonKey_].toDouble());
+                // Mise en forme du graphique (non optimal)
+                chart_.removeSeries(&series_);
+                chart_.addSeries(&series_);
+                chart_.createDefaultAxes();
             }
+
             // Fonction de reception de message (vide pour l'instant)
-            msgReceived_ = msgBuffer;
+            msgReceived_ = msgBuffer_;
             onMessageReceived(msgReceived_);
 
             // Si les donnees doivent etre enregistrees
@@ -75,7 +85,7 @@ void MainWindow::receiveFromSerial(QString msg){
             }
         }
         // Reinitialisation du message tampon
-        msgBuffer = "";
+        msgBuffer_ = "";
     }
 }
 
@@ -87,14 +97,14 @@ void MainWindow::connectTimers(int updateRate){
 
 void MainWindow::connectSerialPortRead(){
     // Fonction de connection au message de la classe (serialProtocol)
-    connect(serialCom, SIGNAL(newMessage(QString)), this, SLOT(receiveFromSerial(QString)));
+    connect(serialCom_, SIGNAL(newMessage(QString)), this, SLOT(receiveFromSerial(QString)));
 }
 
 void MainWindow::connectButtons(){
     // Fonction de connection du boutton Send
     connect(ui->pulseButton, SIGNAL(clicked()), this, SLOT(sendPulseStart()));
     connect(ui->checkBox, SIGNAL(stateChanged(int)), this, SLOT(manageRecording(int)));
-    connect(ui->pushButton, SIGNAL(clicked()), this, SLOT(sendPID()));
+    connect(ui->pushButton_Params, SIGNAL(clicked()), this, SLOT(sendPID()));
 }
 
 void MainWindow::connectSpinBoxes(){
@@ -106,7 +116,7 @@ void MainWindow::connectSpinBoxes(){
 void MainWindow::connectTextInputs(){
     // Fonction de connection des entrees de texte
     connect(ui->JsonKey, SIGNAL(returnPressed()), this, SLOT(changeJsonKeyValue()));
-    JsonKey = ui->JsonKey->text();
+    JsonKey_ = ui->JsonKey->text();
 }
 
 void MainWindow::connectComboBox(){
@@ -125,21 +135,21 @@ void MainWindow::portCensus(){
 void MainWindow::startSerialCom(QString portName){
     // Fonction SLOT pour demarrer la communication serielle
     qDebug().noquote() << "Connection au port"<< portName;
-    if(serialCom!=nullptr){
-        delete serialCom;
+    if(serialCom_!=nullptr){
+        delete serialCom_;
     }
-    serialCom = new SerialProtocol(portName, BAUD_RATE);
+    serialCom_ = new SerialProtocol(portName, BAUD_RATE);
     connectSerialPortRead();
 }
 
 void MainWindow::changeJsonKeyValue(){
     // Fonction SLOT pour changer la valeur de la cle Json
-    plot.clear();
-    JsonKey = ui->JsonKey->text();
+    series_.clear();
+    JsonKey_ = ui->JsonKey->text();
 }
 void MainWindow::sendPID(){
     // Fonction SLOT pour envoyer les paramettres de pulse
-    double goal = ui->lineEdit->text().toDouble();
+    double goal = ui->lineEdit_DesVal->text().toDouble();
     QJsonObject jsonObject
     {// pour minimiser le nombre de decimales( QString::number)
         {"setGoal", QString::number(goal, 'f', 2)}
@@ -175,11 +185,11 @@ void MainWindow::sendPulseStart(){
 
 void MainWindow::sendMessage(QString msg){
     // Fonction SLOT d'ecriture sur le port serie
-    if(serialCom==nullptr){
+    if(serialCom_==nullptr){
         qDebug().noquote() <<"Erreur aucun port serie !!!";
         return;
     }
-    serialCom->sendMessage(msg);
+    serialCom_->sendMessage(msg);
     qDebug().noquote() <<"Message du RPI: "  <<msg;
 }
 
@@ -213,7 +223,7 @@ void MainWindow::stopRecording(){
 void MainWindow::onMessageReceived(QString msg){
     // Fonction appelee lors de reception de message
     // Decommenter la ligne suivante pour deverminage
-    qDebug().noquote() << "Message du Arduino: " << msg;
+    // qDebug().noquote() << "Message du Arduino: " << msg;
 }
 
 void MainWindow::onPeriodicUpdate(){

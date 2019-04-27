@@ -1,5 +1,6 @@
-build
-.vscode/
-.travis.yml
-.DS_Store
+/.vscode/*
+!/.vscode/tasks.json 
 
+/.travis.yml
+/.DS_Store
+/build/
