@@ -50,24 +50,10 @@ void sendMsg();
 void readMsg();
 void serialEvent();
 
-
-
 // Fonctions pour le PID
-double measurement(){
-  double tours = double(AX_.readEncoder(0))/(PASPARTOUR*RAPPORTVITESSE);
-  return tours;
-}
-void command(double cmd){
-  //Serial.println(cmd);
-  double lim = .5;
-  if(cmd > lim){cmd = lim;}
-  if(cmd < -lim){cmd = -lim;}
-  AX_.setSpeedMotor(0,cmd);
-}
-void goalReached(){
-  //Serial.println("goal reached!!!");
-  AX_.setSpeedMotor(0,0);
-}
+double PIDmeasurement();
+void PIDcommand(double cmd);
+void PIDgoalReached();
 
 /*---------------------------- fonctions "Main" -----------------------------*/
 
@@ -86,17 +72,18 @@ void setup() {
   // Chronometre duration pulse
   timerPulse_.setCallback(endPulse);
   
-  // SetUp PID
+  // Initialisation du PID
   pid.setGains(0.25,0.1 ,0);
-  pid.setMeasurementFunc(measurement);
-  pid.setCommandFunc(command);
-  pid.setAtGoalFunc(goalReached);
-  pid.setEpsilon(0.005);
+    // Attache des fonctions de retour (Callback)
+    pid.setMeasurementFunc(PIDmeasurement);
+    pid.setCommandFunc(PIDcommand);
+    pid.setAtGoalFunc(PIDgoalReached);
+  pid.setEpsilon(0.001);
   pid.setPeriod(10);
 
 }
 
-/* Fonction boucle infinie*/
+/* Boucle principale (infinie)*/
 void loop() {
   if(shouldRead_){
     readMsg();
@@ -110,6 +97,8 @@ void loop() {
   // Mise a jour des chronometres
   timerSendMsg_.update();
   timerPulse_.update();
+  
+  // Mise à jour du PID
   pid.run();
 }
 
@@ -124,8 +113,8 @@ void startPulse(){
   timerPulse_.setDelay(pulseTime_);
   timerPulse_.enable();
   timerPulse_.setRepetition(1);
-  AX_.setSpeedMotor(0,pulsePWM_);
-  AX_.setSpeedMotor(1,pulsePWM_);
+  AX_.setSpeedMotor(0, pulsePWM_);
+  AX_.setSpeedMotor(1, pulsePWM_);
   shouldPulse_ = false;
   isInPulse_ = true;
 }
@@ -147,7 +136,7 @@ void sendMsg(){
   doc["potVex"] = analogRead(POTPIN);
   doc["encVex"] = vexEncoder_.getCount();
   doc["goal"] = pid.getGoal();
-  doc["motorPos"] = measurement();
+  doc["motorPos"] = PIDmeasurement();
   doc["voltage"] = AX_.getVoltage();
   doc["current"] = AX_.getCurrent(); 
   doc["pulsePWM"] = pulsePWM_;
@@ -206,4 +195,24 @@ void readMsg(){
   if(!parse_msg.isNull()){
      shouldPulse_ = doc["pulse"];
   }
+}
+
+
+// Fonctions pour le PID
+double PIDmeasurement(){
+  double tours = double(AX_.readEncoder(0))/(PASPARTOUR*RAPPORTVITESSE);
+  return tours;
+}
+void PIDcommand(double cmd){
+  //Serial.println(cmd);
+  double lim = .5;
+  if(cmd > lim){cmd = lim;}
+  if(cmd < -lim){cmd = -lim;}
+  AX_.setSpeedMotor(0,cmd);
+  AX_.setSpeedMotor(1,cmd);
+}
+void PIDgoalReached(){
+  //Serial.println("goal reached!!!");
+  AX_.setSpeedMotor(0,0);
+  AX_.setSpeedMotor(1,0);
 }
