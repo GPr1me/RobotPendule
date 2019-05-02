@@ -9,12 +9,14 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QSerialPortInfo>
+
+#include <QtCharts/QChartView>
+#include <QtCharts/QLineSeries>
 #include <QtCharts>
 
 // Propres librairies
 #include "csvwriter.h"
 #include "serialprotocol.h"
-#include "plot.h"
 
 // Classe definissant l'application
 namespace Ui {
@@ -30,8 +32,8 @@ public:
     int DEFAULT_UPDATE_RATE = 1000;
     const qint32 BAUD_RATE = 115200;
 
-    explicit MainWindow(int updateRate, QWidget *parent = 0);
-    explicit MainWindow(QWidget *parent = 0);
+    explicit MainWindow(int updateRate, QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
     virtual ~MainWindow() override;
     void closeEvent(QCloseEvent *event) override;
 

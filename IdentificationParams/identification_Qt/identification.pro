@@ -32,7 +32,6 @@ SOURCES += \
 HEADERS += \
         mainwindow.h \
         serialprotocol.h \
-        plot.h \
         csvwriter.h
 
 FORMS += \

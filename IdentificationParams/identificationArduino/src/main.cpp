@@ -2,7 +2,7 @@
  * GRO 302 - Conception d'un robot mobile
  * Code de démarrage
  * Auteurs: Jean-Samuel Lauzon     
- * date:    1 mai 2019
+ * date: 1 mai 2019
 */
 
 /*------------------------------ Librairies ---------------------------------*/
@@ -10,22 +10,23 @@
 #include <ArduinoJson.h>
 
 /*------------------------------ Constantes ---------------------------------*/
+
 #define BAUD            115200      // Frequence de transmission serielle
 #define UPDATE_PERIODE  100         // Periode (ms) d'envoie d'etat general
 
 #define MAGPIN          32          // Port numerique pour electroaimant
 #define POTPIN          A5          // Port analogique pour le potentiometre
 
-#define PASPARTOUR      64          // Nombre de pas par tour lu par l'encodeur du moteur
-#define RAPPORTVITESSE  50          // Rapport de vitesse de la boite de vitesse du moteur
+#define PASPARTOUR      64          // Nombre de pas par tour du moteur
+#define RAPPORTVITESSE  50          // Rapport de vitesse du moteur
 
 /*---------------------------- variables globales ---------------------------*/
+
 ArduinoX AX_;                       // objet arduinoX
 MegaServo servo_;                   // objet servomoteur
 VexQuadEncoder vexEncoder_;         // encodeur vex
 IMU9DOF imu_;                       // encodeur vex
-
-PID pid;                            // PID object
+PID pid_;                           // PID object
 
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
@@ -76,18 +77,19 @@ void setup() {
   timerPulse_.setCallback(endPulse);
   
   // Initialisation du PID
-  pid.setGains(0.25,0.1 ,0);
+  pid_.setGains(0.25,0.1 ,0);
     // Attache des fonctions de retour
-    pid.setMeasurementFunc(PIDmeasurement);
-    pid.setCommandFunc(PIDcommand);
-    pid.setAtGoalFunc(PIDgoalReached);
-  pid.setEpsilon(0.001);
-  pid.setPeriod(10);
+    pid_.setMeasurementFunc(PIDmeasurement);
+    pid_.setCommandFunc(PIDcommand);
+    pid_.setAtGoalFunc(PIDgoalReached);
+  pid_.setEpsilon(0.001);
+  pid_.setPeriod(10);
 
 }
 
 /* Boucle principale (infinie)*/
 void loop() {
+
   if(shouldRead_){
     readMsg();
   }
@@ -103,7 +105,7 @@ void loop() {
   timerPulse_.update();
   
   // mise à jour du PID
-  pid.run();
+  pid_.run();
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
@@ -133,13 +135,13 @@ void endPulse(){
 
 void sendMsg(){
   /* Envoit du message Json sur le port seriel */
-  StaticJsonDocument<200> doc;
+  StaticJsonDocument<500> doc;
   // Elements du message
 
   doc["time"] = millis();
   doc["potVex"] = analogRead(POTPIN);
   doc["encVex"] = vexEncoder_.getCount();
-  doc["goal"] = pid.getGoal();
+  doc["goal"] = pid_.getGoal();
   doc["motorPos"] = PIDmeasurement();
   doc["voltage"] = AX_.getVoltage();
   doc["current"] = AX_.getCurrent(); 
@@ -152,7 +154,7 @@ void sendMsg(){
   doc["gyroX"] = imu_.getGyroX();
   doc["gyroY"] = imu_.getGyroY();
   doc["gyroZ"] = imu_.getGyroZ();
-  doc["isGoal"] = pid.isAtGoal();
+  doc["isGoal"] = pid_.isAtGoal();
 
   // Serialisation
   serializeJson(doc, Serial);
@@ -163,7 +165,7 @@ void sendMsg(){
 
 void readMsg(){
   // Lecture du message Json
-  StaticJsonDocument<200> doc;
+  StaticJsonDocument<500> doc;
   JsonVariant parse_msg;
 
   // Lecture sur le port Seriel
@@ -180,9 +182,8 @@ void readMsg(){
   // Analyse du message
   parse_msg = doc["setGoal"];
   if(!parse_msg.isNull()){
-    
-    pid.setGoal(doc["setGoal"].as<double>());
-    pid.enable();
+    pid_.setGoal(doc["setGoal"].as<double>());
+    pid_.enable();
   }
 
   parse_msg = doc["pulsePWM"];
