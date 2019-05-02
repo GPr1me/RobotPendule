@@ -1,6 +1,8 @@
-/* Code exemple pour projet S3 GRO
+/* 
+ * GRO 302 - Conception d'un robot mobile
+ * Code de démarrage
  * Auteurs: Jean-Samuel Lauzon     
- * date:    17 mars 2019
+ * date:    1 mai 2019
 */
 
 /*------------------------------ Librairies ---------------------------------*/
@@ -8,38 +10,38 @@
 #include <ArduinoJson.h>
 
 /*------------------------------ Constantes ---------------------------------*/
-#define BAUD            115200 // Frequence de transmission serielle
-#define UPDATE_PERIODE  100  // Periode (ms) d'envoie d'etat general
+#define BAUD            115200      // Frequence de transmission serielle
+#define UPDATE_PERIODE  100         // Periode (ms) d'envoie d'etat general
 
-#define MAGPIN          32  // Port numerique pour electroaimant
-#define POTPIN          A5  // Port analogique pour le potentiometre
+#define MAGPIN          32          // Port numerique pour electroaimant
+#define POTPIN          A5          // Port analogique pour le potentiometre
 
-#define PASPARTOUR      64  // Nombre de pas par tour lu par l'encodeur du moteur
-#define RAPPORTVITESSE  50  // Rapport de vitesse de la boite de vitesse du moteur
-#define dasfasdfasgasgsd  50 
+#define PASPARTOUR      64          // Nombre de pas par tour lu par l'encodeur du moteur
+#define RAPPORTVITESSE  50          // Rapport de vitesse de la boite de vitesse du moteur
+
 /*---------------------------- variables globales ---------------------------*/
-ArduinoX AX_; // objet arduinoX
-MegaServo servo_; // objet servomoteur
-VexQuadEncoder vexEncoder_; // encodeur vex
-IMU9DOF imu_; // encodeur vex
+ArduinoX AX_;                       // objet arduinoX
+MegaServo servo_;                   // objet servomoteur
+VexQuadEncoder vexEncoder_;         // encodeur vex
+IMU9DOF imu_;                       // encodeur vex
 
-PID pid; // PID object
+PID pid;                            // PID object
 
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
 volatile bool shouldPulse_ = false; // drapeau pour effectuer un pulse
-volatile bool isInPulse_ = false; // drapeau pour effectuer un pulse
+volatile bool isInPulse_ = false;   // drapeau pour effectuer un pulse
 
-SoftTimer timerSendMsg_;    // chronometre d'envoie de messages
-SoftTimer timerPulse_;      // chronometre pour la duree d'un pulse
+SoftTimer timerSendMsg_;            // chronometre d'envoie de messages
+SoftTimer timerPulse_;              // chronometre pour la duree d'un pulse
 
-uint16_t pulseTime_ = 0; // temps dun pulse en ms
-float pulsePWM_ = 0;     // Amplitude de la tension au moteur [-1,1]
+uint16_t pulseTime_ = 0;            // temps dun pulse en ms
+float pulsePWM_ = 0;                // Amplitude de la tension au moteur [-1,1]
 
 
-float Axyz[3]; // Accelerometre
-float Gxyz[3]; // Giroscope
-float Mxyz[3]; // Magnetometre
+float Axyz[3];                      // tableau pour accelerometre
+float Gxyz[3];                      // tableau pour giroscope
+float Mxyz[3];                      // tableau pour magnetometre
 
 /*------------------------- Prototypes de fonctions -------------------------*/
 
@@ -58,10 +60,11 @@ void PIDgoalReached();
 /*---------------------------- fonctions "Main" -----------------------------*/
 
 void setup() {
-  Serial.begin(BAUD); // initialisation de la communication serielle
-  AX_.init(); // initialisation de la carte ArduinoX 
-  imu_.init(); // initialisation de la centrale inertielle
-  vexEncoder_.init(2,3);// initialisation de l'encodeur VEX
+  Serial.begin(BAUD);               // initialisation de la communication serielle
+  AX_.init();                       // initialisation de la carte ArduinoX 
+  imu_.init();                      // initialisation de la centrale inertielle
+  vexEncoder_.init(2,3);            // initialisation de l'encodeur VEX
+  // attache de l'interruption pour encodeur vex
   attachInterrupt(vexEncoder_.getPinInt(), []{vexEncoder_.isr();}, FALLING);
   
   // Chronometre envoie message
@@ -74,7 +77,7 @@ void setup() {
   
   // Initialisation du PID
   pid.setGains(0.25,0.1 ,0);
-    // Attache des fonctions de retour (Callback)
+    // Attache des fonctions de retour
     pid.setMeasurementFunc(PIDmeasurement);
     pid.setCommandFunc(PIDcommand);
     pid.setAtGoalFunc(PIDgoalReached);
@@ -94,11 +97,12 @@ void loop() {
   if(shouldPulse_){
     startPulse();
   }
-  // Mise a jour des chronometres
+
+  // mise a jour des chronometres
   timerSendMsg_.update();
   timerPulse_.update();
   
-  // Mise à jour du PID
+  // mise à jour du PID
   pid.run();
 }
 
@@ -130,7 +134,7 @@ void endPulse(){
 void sendMsg(){
   /* Envoit du message Json sur le port seriel */
   StaticJsonDocument<200> doc;
-  // elements du message
+  // Elements du message
 
   doc["time"] = millis();
   doc["potVex"] = analogRead(POTPIN);
@@ -200,19 +204,12 @@ void readMsg(){
 
 // Fonctions pour le PID
 double PIDmeasurement(){
-  double tours = double(AX_.readEncoder(0))/(PASPARTOUR*RAPPORTVITESSE);
-  return tours;
+  // To do
+  return 0;
 }
 void PIDcommand(double cmd){
-  //Serial.println(cmd);
-  double lim = .5;
-  if(cmd > lim){cmd = lim;}
-  if(cmd < -lim){cmd = -lim;}
-  AX_.setSpeedMotor(0,cmd);
-  AX_.setSpeedMotor(1,cmd);
+  // To do
 }
 void PIDgoalReached(){
-  //Serial.println("goal reached!!!");
-  AX_.setSpeedMotor(0,0);
-  AX_.setSpeedMotor(1,0);
+  // To do
 }

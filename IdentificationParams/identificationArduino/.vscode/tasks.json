@@ -2,14 +2,6 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "pioRun",
-            "type": "shell",
-            "command": "pio",
-            "args": [
-                "run"
-            ]
-        },
-        {
             "label": "RemoteUpload",
             "type": "shell",
             "command": "./cmd/uploadArduinoFromPi.sh",
@@ -19,7 +11,6 @@
                 "${workspaceFolder}/build/megaatmega2560/firmware.hex",
                 "${input:arduinoPort}"
             ],
-            "dependsOn": "pioRun",
             "group": "build",
             "problemMatcher": []
         }
