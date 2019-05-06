@@ -24,9 +24,9 @@
 
 ArduinoX AX_;                       // objet arduinoX
 MegaServo servo_;                   // objet servomoteur
-VexQuadEncoder vexEncoder_;         // encodeur vex
-IMU9DOF imu_;                       // encodeur vex
-PID pid_;                           // PID object
+VexQuadEncoder vexEncoder_;         // objet encodeur vex
+IMU9DOF imu_;                       // objet imu
+PID pid_;                           // objet PID
 
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
@@ -84,7 +84,6 @@ void setup() {
     pid_.setAtGoalFunc(PIDgoalReached);
   pid_.setEpsilon(0.001);
   pid_.setPeriod(10);
-
 }
 
 /* Boucle principale (infinie)*/
@@ -119,16 +118,16 @@ void startPulse(){
   timerPulse_.setDelay(pulseTime_);
   timerPulse_.enable();
   timerPulse_.setRepetition(1);
-  AX_.setSpeedMotor(0, pulsePWM_);
-  AX_.setSpeedMotor(1, pulsePWM_);
+  AX_.setMotorPWM(0, pulsePWM_);
+  AX_.setMotorPWM(1, pulsePWM_);
   shouldPulse_ = false;
   isInPulse_ = true;
 }
 
 void endPulse(){
   /* Rappel du chronometre */
-  AX_.setSpeedMotor(0,0);
-  AX_.setSpeedMotor(1,0);
+  AX_.setMotorPWM(0,0);
+  AX_.setMotorPWM(1,0);
   timerPulse_.disable();
   isInPulse_ = false;
 }
@@ -179,13 +178,7 @@ void readMsg(){
     return;
   }
   
-  // Analyse du message
-  parse_msg = doc["setGoal"];
-  if(!parse_msg.isNull()){
-    pid_.setGoal(doc["setGoal"].as<double>());
-    pid_.enable();
-  }
-
+  // Analyse des éléments du message message
   parse_msg = doc["pulsePWM"];
   if(!parse_msg.isNull()){
      pulsePWM_ = doc["pulsePWM"].as<float>();
