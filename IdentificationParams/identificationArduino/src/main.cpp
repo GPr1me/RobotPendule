@@ -8,7 +8,7 @@
 /*------------------------------ Librairies ---------------------------------*/
 #include <LibS3GRO.h>
 #include <ArduinoJson.h>
-
+#include <libExample.h> // Vos propres librairies
 /*------------------------------ Constantes ---------------------------------*/
 
 #define BAUD            115200      // Frequence de transmission serielle
@@ -168,7 +168,7 @@ void readMsg(){
   JsonVariant parse_msg;
 
   // Lecture sur le port Seriel
-  DeserializationError error = deserializeJson(doc, Serial);;
+  DeserializationError error = deserializeJson(doc, Serial);
   shouldRead_ = false;
 
   // Si erreur dans le message

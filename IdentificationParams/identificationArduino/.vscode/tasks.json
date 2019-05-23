@@ -4,7 +4,7 @@
         {
             "label": "RemoteUpload",
             "type": "shell",
-            "command": "./cmd/uploadArduinoFromPi.sh",
+            "command": "./.bash/remoteUploadArduino.sh",
             "args": [
                 "${input:rpiUserName}",
                 "${input:rpiAddress}",
@@ -13,7 +13,21 @@
             ],
             "group": "build",
             "problemMatcher": []
-        }
+        },
+        {
+            "label": "RemoteSerial",
+            "type": "shell",
+            "command": "./.bash/remoteSerialCom.sh",
+            "args": [
+                "${input:rpiUserName}",
+                "${input:rpiAddress}",
+                "${input:arduinoPort}",
+                "${input:monitorSpeed}"
+            ],
+            "group": "build",
+            "problemMatcher": []
+        },
+
     ],
     "inputs": [
         {
@@ -33,6 +47,12 @@
             "id": "arduinoPort",
             "description": "Arduino communication port? ",
             "default": "/dev/ttyACM0"
+        },
+        {
+            "type": "promptString",
+            "id": "monitorSpeed",
+            "description": "communication baud rate? ",
+            "default": "115200"
         }
     ]
 }
