@@ -3,4 +3,5 @@
 
 /.travis.yml
 /.DS_Store
+/downloadedLibraries/
 /build/
