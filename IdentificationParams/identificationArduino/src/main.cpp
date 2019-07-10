@@ -27,6 +27,7 @@ MegaServo servo_;                   // objet servomoteur
 VexQuadEncoder vexEncoder_;         // objet encodeur vex
 IMU9DOF imu_;                       // objet imu
 PID pid_;                           // objet PID
+PID pid_pendule;
 
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
@@ -77,18 +78,24 @@ void setup() {
   timerPulse_.setCallback(endPulse);
   
   // Initialisation du PID
-  pid_.setGains(0.25,0.1 ,0);
+
+  pid_.setGains(5, 0.01 , 0);
     // Attache des fonctions de retour
-    pid_.setMeasurementFunc(PIDmeasurement);
-    pid_.setCommandFunc(PIDcommand);
-    pid_.setAtGoalFunc(PIDgoalReached);
-  pid_.setEpsilon(0.001);
-  pid_.setPeriod(10);
+  pid_.setMeasurementFunc(PIDmeasurement);
+  pid_.setCommandFunc(PIDcommand);
+  pid_.setAtGoalFunc(PIDgoalReached);
+  pid_.setEpsilon(0.001); //TODO
+  
+  pid_.setPeriod(1/4.8);
+
+  pid_pendule.setGains(0.2, 0.01 , 0);
+
 }
 
 /* Boucle principale (infinie)*/
 void loop() {
-
+  AX_.setMotorPWM(0, 1);
+  AX_.setMotorPWM(1, -1);  
   if(shouldRead_){
     readMsg();
   }
@@ -127,7 +134,7 @@ void startPulse(){
 void endPulse(){
   /* Rappel du chronometre */
   AX_.setMotorPWM(0,0);
-  AX_.setMotorPWM(1,0);
+  AX_.setMotorPWM(1,1);
   timerPulse_.disable();
   isInPulse_ = false;
 }
