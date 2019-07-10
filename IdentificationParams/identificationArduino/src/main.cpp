@@ -27,7 +27,9 @@ MegaServo servo_;                   // objet servomoteur
 VexQuadEncoder vexEncoder_;         // objet encodeur vex
 IMU9DOF imu_;                       // objet imu
 PID pid_;                           // objet PID
+PID pid_pos;
 PID pid_pendule;
+
 
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
 volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
@@ -58,6 +60,8 @@ void serialEvent();
 double PIDmeasurement();
 void PIDcommand(double cmd);
 void PIDgoalReached();
+double pulseToMeters();
+void commandPos(double cmd);
 
 /*---------------------------- fonctions "Main" -----------------------------*/
 
@@ -78,7 +82,7 @@ void setup() {
   timerPulse_.setCallback(endPulse);
   
   // Initialisation du PID
-
+  /*
   pid_.setGains(5, 0.01 , 0);
     // Attache des fonctions de retour
   pid_.setMeasurementFunc(PIDmeasurement);
@@ -87,6 +91,14 @@ void setup() {
   pid_.setEpsilon(0.001); //TODO
   
   pid_.setPeriod(1/4.8);
+  */
+  pid_pos.setGains(5, 0.01 , 0);
+    // Attache des fonctions de retour
+  pid_pos.setMeasurementFunc(pulseToMeters);
+  pid_pos.setCommandFunc(PIDcommand);
+  pid_pos.setAtGoalFunc(PIDgoalReached);
+  pid_pos.setEpsilon(0.001); //TODO
+  pid_pos.setPeriod(1/4.8);
 
   pid_pendule.setGains(0.2, 0.01 , 0);
 
@@ -94,8 +106,8 @@ void setup() {
 
 /* Boucle principale (infinie)*/
 void loop() {
-  AX_.setMotorPWM(0, 1);
-  AX_.setMotorPWM(1, -1);  
+  AX_.setMotorPWM(REAR, 1);
+  AX_.setMotorPWM(FRONT, -1);  
   if(shouldRead_){
     readMsg();
   }
@@ -125,16 +137,16 @@ void startPulse(){
   timerPulse_.setDelay(pulseTime_);
   timerPulse_.enable();
   timerPulse_.setRepetition(1);
-  AX_.setMotorPWM(0, pulsePWM_);
-  AX_.setMotorPWM(1, pulsePWM_);
+  AX_.setMotorPWM(REAR, pulsePWM_);
+  AX_.setMotorPWM(FRONT, pulsePWM_);
   shouldPulse_ = false;
   isInPulse_ = true;
 }
 
 void endPulse(){
   /* Rappel du chronometre */
-  AX_.setMotorPWM(0,0);
-  AX_.setMotorPWM(1,1);
+  AX_.setMotorPWM(REAR, 0);
+  AX_.setMotorPWM(FRONT, 1);
   timerPulse_.disable();
   isInPulse_ = false;
 }
@@ -213,4 +225,52 @@ void PIDcommand(double cmd){
 }
 void PIDgoalReached(){
   // To do
+}
+
+double pulseToMeters(){
+    //3200 pulses par tour de roue
+    //conversion vers rads: encoches/ 3200 * 2 * pi
+    //longueur de l'arc: angle_en_rads * r
+    return AX_.readEncoder(1) / 3200 * 2 * PI * 0.05;   
+}
+
+void commandPos(double cmd){
+  //commande si positif
+  if(pid_pos.getGoal() > 0){
+    if(cmd >= 0.05){
+      AX_.setMotorPWM(REAR, 1.0);
+      AX_.setMotorPWM(FRONT, 1.0);
+    }
+    else if(0.01 <= cmd && cmd < 0.05 ){
+      AX_.setMotorPWM(REAR, 0.8);
+      AX_.setMotorPWM(FRONT, 0.8);
+    }
+    else if(0 < cmd && cmd < 0.01){
+      AX_.setMotorPWM(REAR, 0.3);
+      AX_.setMotorPWM(FRONT, 0.3);
+    }
+    else{
+      AX_.setMotorPWM(REAR, 0);
+      AX_.setMotorPWM(FRONT, 0);
+    }
+  }
+  //commande si negatif
+  else{
+    if(cmd <= -0.05){
+      AX_.setMotorPWM(REAR, -1.0);
+      AX_.setMotorPWM(FRONT, -1.0);
+    }
+    else if(-0.01 >= cmd && cmd > -0.05 ){
+      AX_.setMotorPWM(REAR, -0.8);
+      AX_.setMotorPWM(FRONT, -0.8);
+    }
+    else if(0 > cmd && cmd > -0.01){
+      AX_.setMotorPWM(REAR, -0.3);
+      AX_.setMotorPWM(FRONT, -0.3);
+    }
+    else{
+      AX_.setMotorPWM(REAR, 0);
+      AX_.setMotorPWM(FRONT, 0);
+    }
+  } 
 }

@@ -18,13 +18,6 @@ void Deplacement::setGoal(double goal){
     pid_pos->setGoal(goal); 
 }
 
-double Deplacement::pulseToMeters(){
-    //3200 pulses par tour de roue
-    //conversion vers rads: encoches/ 3200 * 2 * pi
-    //longueur de l'arc: angle_en_rads * r
-    return ax->readEncoder(1) / 3200 * 2 * PI * 0.05;   
-}
-
 void Deplacement::setMotorSpeed(){
     if(distance < goal - 3200){
         ax->setMotorPWM(1, 1.0);
