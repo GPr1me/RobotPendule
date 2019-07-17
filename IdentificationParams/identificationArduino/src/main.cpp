@@ -106,8 +106,8 @@ void setup() {
 
 /* Boucle principale (infinie)*/
 void loop() {
-  AX_.setMotorPWM(REAR, 1);
-  AX_.setMotorPWM(FRONT, -1);  
+  AX_.setMotorPWM(0, 1);
+  AX_.setMotorPWM(1, -1);  
   if(shouldRead_){
     readMsg();
   }
@@ -137,16 +137,16 @@ void startPulse(){
   timerPulse_.setDelay(pulseTime_);
   timerPulse_.enable();
   timerPulse_.setRepetition(1);
-  AX_.setMotorPWM(REAR, pulsePWM_);
-  AX_.setMotorPWM(FRONT, pulsePWM_);
+  AX_.setMotorPWM(0, pulsePWM_);
+  AX_.setMotorPWM(1, pulsePWM_);
   shouldPulse_ = false;
   isInPulse_ = true;
 }
 
 void endPulse(){
   /* Rappel du chronometre */
-  AX_.setMotorPWM(REAR, 0);
-  AX_.setMotorPWM(FRONT, 1);
+  AX_.setMotorPWM(0, 0);
+  AX_.setMotorPWM(1, 1);
   timerPulse_.disable();
   isInPulse_ = false;
 }
@@ -238,39 +238,39 @@ void commandPos(double cmd){
   //commande si positif
   if(pid_pos.getGoal() > 0){
     if(cmd >= 0.05){
-      AX_.setMotorPWM(REAR, 1.0);
-      AX_.setMotorPWM(FRONT, 1.0);
+      AX_.setMotorPWM(0, 1.0);
+      AX_.setMotorPWM(1, 1.0);
     }
     else if(0.01 <= cmd && cmd < 0.05 ){
-      AX_.setMotorPWM(REAR, 0.8);
-      AX_.setMotorPWM(FRONT, 0.8);
+      AX_.setMotorPWM(0, 0.8);
+      AX_.setMotorPWM(1, 0.8);
     }
     else if(0 < cmd && cmd < 0.01){
-      AX_.setMotorPWM(REAR, 0.3);
-      AX_.setMotorPWM(FRONT, 0.3);
+      AX_.setMotorPWM(0, 0.3);
+      AX_.setMotorPWM(1, 0.3);
     }
     else{
-      AX_.setMotorPWM(REAR, 0);
-      AX_.setMotorPWM(FRONT, 0);
+      AX_.setMotorPWM(0, 0);
+      AX_.setMotorPWM(1, 0);
     }
   }
   //commande si negatif
   else{
     if(cmd <= -0.05){
-      AX_.setMotorPWM(REAR, -1.0);
-      AX_.setMotorPWM(FRONT, -1.0);
+      AX_.setMotorPWM(0, -1.0);
+      AX_.setMotorPWM(1, -1.0);
     }
     else if(-0.01 >= cmd && cmd > -0.05 ){
-      AX_.setMotorPWM(REAR, -0.8);
-      AX_.setMotorPWM(FRONT, -0.8);
+      AX_.setMotorPWM(0, -0.8);
+      AX_.setMotorPWM(1, -0.8);
     }
     else if(0 > cmd && cmd > -0.01){
-      AX_.setMotorPWM(REAR, -0.3);
-      AX_.setMotorPWM(FRONT, -0.3);
+      AX_.setMotorPWM(0, -0.3);
+      AX_.setMotorPWM(1, -0.3);
     }
     else{
-      AX_.setMotorPWM(REAR, 0);
-      AX_.setMotorPWM(FRONT, 0);
+      AX_.setMotorPWM(0, 0);
+      AX_.setMotorPWM(1, 0);
     }
   } 
 }
