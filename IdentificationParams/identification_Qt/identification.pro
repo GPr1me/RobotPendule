@@ -27,14 +27,17 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
         serialprotocol.cpp \
-        csvwriter.cpp
+        csvwriter.cpp \
+    startupmainwindow.cpp
 
 HEADERS += \
         mainwindow.h \
         serialprotocol.h \
-        csvwriter.h
+        csvwriter.h \
+    startupmainwindow.h
 
 FORMS += \
-        mainwindow.ui
+        mainwindow.ui \
+    startupmainwindow.ui
 
 DISTFILES +=
