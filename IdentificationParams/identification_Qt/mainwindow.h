@@ -45,6 +45,8 @@ public:
     void onMessageReceived(QString);
 
     bool shouldOpen();
+    //void connectSerialPortRead();
+    void setSerialCom(SerialProtocol* sc);
 
 private slots:
     void receiveFromSerial(QString);
@@ -59,6 +61,8 @@ private slots:
     void on_StartButton_clicked();
 
     void on_StopButton_clicked();
+
+
 
 private:
     void connectTimers(int updateRate);

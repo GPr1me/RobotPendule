@@ -36,14 +36,13 @@ public:
 
 
 private slots:
-    void donothing();
+    //void donothing();
     void on_WtvButton_clicked();
     void HauteurSent();
     void DistanceSent();
     void LargeurSent();
     void startSerialCom(QString);
     void on_Back_clicked();
-    //void portCensus();
     void connectComboBox();
     void on_Close_clicked();
 
@@ -55,7 +54,7 @@ private:
     MainWindow *g;
     int delayMs;
     //bool f;
-    void connectSerialPortRead();
+    //void connectSerialPortRead();
     void checkButton();
     void sendPulseSetting();
 

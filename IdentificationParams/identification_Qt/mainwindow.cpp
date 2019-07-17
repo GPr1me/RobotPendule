@@ -92,6 +92,10 @@ void MainWindow::receiveFromSerial(QString msg){
     }
 }
 
+void MainWindow::setSerialCom(SerialProtocol* sc){
+    serialCom_ = sc;
+}
+
 void MainWindow::connectTimers(int updateRate){
     // Fonction de connection de timers
     connect(&updateTimer_, &QTimer::timeout, this, [this]{onPeriodicUpdate();});

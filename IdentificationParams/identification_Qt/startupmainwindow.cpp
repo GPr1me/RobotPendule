@@ -154,17 +154,18 @@ void StartupMainWindow::startSerialCom(QString portName){
         delete serialCom_;
     }
     serialCom_ = new SerialProtocol(portName, BAUD_RATE);
-    connectSerialPortRead();
+    g->setSerialCom(serialCom_);
+    //g->connectSerialPortRead();
 }
 
-void StartupMainWindow::connectSerialPortRead(){
+//void MainWindow::connectSerialPortRead();
     // Fonction de connection au message de la classe (serialProtocol)
-    connect(serialCom_, SIGNAL(newMessage(QString)), this, SLOT(donothing()));
-}
+    //connect(serialCom_, SIGNAL(newMessage(QString)), this, SLOT(donothing()));
+//}
 
-void StartupMainWindow::donothing(){
-    qDebug("Waddup1");
-}
+//void MainWindow::donothing(){
+    //qDebug("Waddup1");
+//}
 
 
 
