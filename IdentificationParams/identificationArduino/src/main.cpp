@@ -14,8 +14,9 @@
 #define BAUD            115200      // Frequence de transmission serielle
 #define UPDATE_PERIODE  100         // Periode (ms) d'envoie d'etat general
 
-#define MAGPIN          32          // Port numerique pour electroaimant
-#define POTPIN          A5          // Port analogique pour le potentiometre
+#define MAGPIN          8          // Port numerique pour electroaimant
+#define POTPIN          A5         // Port analogique pour le potentiometre
+//min:7  stable:486  max:954
 
 #define PASPARTOUR      64          // Nombre de pas par tour du moteur
 #define RAPPORTVITESSE  50          // Rapport de vitesse du moteur
@@ -53,6 +54,14 @@ FRONT
 
 };
 
+double prev_p = 0;
+double cur_p;
+double cur_v;
+double cur_T;
+double lastT = 0;
+
+double tcmd;
+
 /*------------------------- Prototypes de fonctions -------------------------*/
 
 void timerCallback();
@@ -68,8 +77,11 @@ void PIDcommand(double cmd);
 void PIDgoalReached();
 double pulseToMeters();
 void commandPos(double cmd);
+double getVel();
+double getAngle();
 
 /*---------------------------- fonctions "Main" -----------------------------*/
+unsigned long timer;
 
 void setup() {
   Serial.begin(BAUD);               // initialisation de la communication serielle
@@ -98,22 +110,41 @@ void setup() {
   
   pid_.setPeriod(1/4.8);
   */
-  pid_pos.setGains(5, 0.01 , 0);
+  pid_pos.setGains(5, 0.02 , 0);
     // Attache des fonctions de retour
-  pid_pos.setMeasurementFunc(pulseToMeters);
+  pid_pos.setMeasurementFunc(PIDmeasurement);
   pid_pos.setCommandFunc(PIDcommand);
   pid_pos.setAtGoalFunc(PIDgoalReached);
   pid_pos.setEpsilon(0.001); //TODO
-  pid_pos.setPeriod(1/4.8);
+  pid_pos.setPeriod(50);
 
   pid_pendule.setGains(0.2, 0.01 , 0);
+  //pour test sans qt
+  //pid_pos.setGoal(5.0);
+  //pid_pos.enable();
+
+  AX_.resetEncoder(1);
+
+  timer = millis();
+
+  pinMode(MAGPIN, OUTPUT);
+  pinMode(POTPIN, INPUT);
 
 }
 
 /* Boucle principale (infinie)*/
 void loop() {
-  AX_.setMotorPWM(REAR, 1);
-  AX_.setMotorPWM(FRONT, -1);  
+  //AX_.setMotorPWM(REAR, -1);
+  //AX_.setMotorPWM(FRONT, 1); 
+  //Serial.println(getVel());
+  if(10000 > (millis() - timer) ){
+    digitalWrite(MAGPIN, 1);
+  }
+  else{
+    digitalWrite(MAGPIN, 0);
+  }
+  
+   
   if(shouldRead_){
     readMsg();
   }
@@ -129,7 +160,8 @@ void loop() {
   timerPulse_.update();
   
   // mise à jour du PID
-  pid_.run();
+  pid_pos.run();
+  
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
@@ -162,23 +194,24 @@ void sendMsg(){
   StaticJsonDocument<500> doc;
   // Elements du message
 
+  doc["cmd"] = tcmd;
   doc["time"] = millis();
   doc["potVex"] = analogRead(POTPIN);
-  doc["encVex"] = vexEncoder_.getCount();
-  doc["goal"] = pid_.getGoal();
+  //doc["encVex"] = vexEncoder_.getCount();
+  doc["goal"] = pid_pos.getGoal();
   doc["motorPos"] = PIDmeasurement();
-  doc["voltage"] = AX_.getVoltage();
-  doc["current"] = AX_.getCurrent(); 
+  //doc["voltage"] = AX_.getVoltage();
+  //doc["current"] = AX_.getCurrent(); 
   doc["pulsePWM"] = pulsePWM_;
   doc["pulseTime"] = pulseTime_;
   doc["inPulse"] = isInPulse_;
-  doc["accelX"] = imu_.getAccelX();
-  doc["accelY"] = imu_.getAccelY();
-  doc["accelZ"] = imu_.getAccelZ();
-  doc["gyroX"] = imu_.getGyroX();
-  doc["gyroY"] = imu_.getGyroY();
-  doc["gyroZ"] = imu_.getGyroZ();
-  doc["isGoal"] = pid_.isAtGoal();
+  //doc["accelX"] = imu_.getAccelX();
+  //doc["accelY"] = imu_.getAccelY();
+  //doc["accelZ"] = imu_.getAccelZ();
+  //doc["gyroX"] = imu_.getGyroX();
+  //doc["gyroY"] = imu_.getGyroY();
+  //doc["gyroZ"] = imu_.getGyroZ();
+  doc["isGoal"] = pid_pos.isAtGoal();
 
   // Serialisation
   serializeJson(doc, Serial);
@@ -220,26 +253,63 @@ void readMsg(){
   }
 }
 
+//TODO: calculer le rapport pour passer de la tension aux deux extremes a un angle en degres
+//min:7  stable:486  max:954
+double getAngle(){
+
+}
 
 // Fonctions pour le PID
+
+//1.07 Vmax selon les valeurs lues (front de reference)
+double getVel(){
+  // To do
+  cur_p = pulseToMeters();
+  cur_T = millis() / 1000;
+  cur_v = (cur_p - prev_p)/(cur_T - lastT) * 1.0;
+  prev_p = cur_p;
+  lastT = cur_T;
+  return cur_v;
+}  
+
 double PIDmeasurement(){
   // To do
-  return 0;
+  return pulseToMeters();
 }
+
 void PIDcommand(double cmd){
+  tcmd = cmd;
   // To do
+  if(cmd > 1){
+    AX_.setMotorPWM(0, -1);
+    AX_.setMotorPWM(1, 1);
+  }
+  else if(cmd < -1){
+    AX_.setMotorPWM(0, 1);
+    AX_.setMotorPWM(1, -1);
+  }
+  else{
+    AX_.setMotorPWM(0, -cmd);
+    AX_.setMotorPWM(1, cmd);
+  }
 }
 void PIDgoalReached(){
   // To do
+  AX_.resetEncoder(1);
+  AX_.setMotorPWM(0, 0);
+  AX_.setMotorPWM(1, 0);
 }
 
 double pulseToMeters(){
     //3200 pulses par tour de roue
     //conversion vers rads: encoches/ 3200 * 2 * pi
     //longueur de l'arc: angle_en_rads * r
-    return AX_.readEncoder(1) / 3200 * 2 * PI * 0.05;   
+    return AX_.readEncoder(1) / 3200.0 * 2 * PI * 0.05;   
 }
+void commandPos(double cmd){
 
+}
+/* 
 void commandPos(double cmd){
   //commande si positif
   if(pid_pos.getGoal() > 0){
@@ -279,4 +349,5 @@ void commandPos(double cmd){
       AX_.setMotorPWM(FRONT, 0);
     }
   } 
-}
+  
+}*/
