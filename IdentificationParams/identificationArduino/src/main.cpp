@@ -47,6 +47,12 @@ float Axyz[3];                      // tableau pour accelerometre
 float Gxyz[3];                      // tableau pour giroscope
 float Mxyz[3];                      // tableau pour magnetometre
 
+enum engines{
+REAR,
+FRONT
+
+};
+
 /*------------------------- Prototypes de fonctions -------------------------*/
 
 void timerCallback();
