@@ -32,24 +32,30 @@ public:
     explicit StartupMainWindow(QWidget *parent = 0);
     ~StartupMainWindow();
     void sendMessage(QString msg);
+    const qint32 BAUD_RATE = 115200;
 
 
 private slots:
-
+    void donothing();
     void on_WtvButton_clicked();
     void HauteurSent();
     void DistanceSent();
     void LargeurSent();
-
+    void startSerialCom(QString);
     void on_Back_clicked();
-
+    //void portCensus();
+    void connectComboBox();
     void on_Close_clicked();
 
+
 private:
+    void portCensus();
+    QString msgBuffer_{""};
     Ui::StartupMainWindow *ui;
     MainWindow *g;
     int delayMs;
-    bool f;
+    //bool f;
+    void connectSerialPortRead();
     void checkButton();
     void sendPulseSetting();
 

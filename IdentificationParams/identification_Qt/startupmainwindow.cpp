@@ -1,6 +1,7 @@
 #include "startupmainwindow.h"
 #include "ui_startupmainwindow.h"
 #include "mainwindow.h"
+#include <QDebug>
 
 bool h = 0;
 bool d = 0;
@@ -14,11 +15,13 @@ StartupMainWindow::StartupMainWindow(QWidget *parent) :
 
     delayMs = 1000;
     ui->setupUi(this);
-    f = false;
+    //f = false;
     g = new MainWindow(delayMs, this);
     connect(ui->SendHauteur, SIGNAL(clicked(bool)), this, SLOT(HauteurSent()));
     connect(ui->SendDistance, SIGNAL(clicked(bool)), this, SLOT(DistanceSent()));
     connect(ui->SendLargeur, SIGNAL(clicked(bool)), this, SLOT(LargeurSent()));
+    connectComboBox();
+    portCensus();
 }
 
 StartupMainWindow::~StartupMainWindow()
@@ -128,3 +131,44 @@ void StartupMainWindow::on_Close_clicked()
 {
     this->close();
 }
+
+void StartupMainWindow::connectComboBox(){
+    // Fonction de connection des entrees deroulantes
+    connect(ui->SelectPort, SIGNAL(activated(QString)), this, SLOT(startSerialCom(QString)));
+}
+
+
+void StartupMainWindow::portCensus(){
+    // Fonction pour recenser les ports disponibles
+    ui->SelectPort->clear();
+    Q_FOREACH(QSerialPortInfo port, QSerialPortInfo::availablePorts()) {
+        ui->SelectPort->addItem(port.portName());
+    }
+}
+
+void StartupMainWindow::startSerialCom(QString portName){
+     qDebug("Waddup");
+    // Fonction SLOT pour demarrer la communication serielle
+    qDebug().noquote() << "Connection au port"<< portName;
+    if(serialCom_!=nullptr){
+        delete serialCom_;
+    }
+    serialCom_ = new SerialProtocol(portName, BAUD_RATE);
+    connectSerialPortRead();
+}
+
+void StartupMainWindow::connectSerialPortRead(){
+    // Fonction de connection au message de la classe (serialProtocol)
+    connect(serialCom_, SIGNAL(newMessage(QString)), this, SLOT(donothing()));
+}
+
+void StartupMainWindow::donothing(){
+    qDebug("Waddup1");
+}
+
+
+
+
+
+
+
