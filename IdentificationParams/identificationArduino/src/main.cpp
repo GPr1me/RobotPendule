@@ -33,18 +33,16 @@ PID pid_;                           // objet PID
 PID pid_pos;
 PID pid_pendule;  //TODO
 
-
-volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
-volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
+volatile bool shouldSend_  = false; // drapeau prêt à envoyer un message
+volatile bool shouldRead_  = false; // drapeau prêt à lire un message
 volatile bool shouldPulse_ = false; // drapeau pour effectuer un pulse
-volatile bool isInPulse_ = false;   // drapeau pour effectuer un pulse
+volatile bool isInPulse_   = false; // drapeau pour effectuer un pulse
 
 SoftTimer timerSendMsg_;            // chronometre d'envoie de messages
 SoftTimer timerPulse_;              // chronometre pour la duree d'un pulse
 
 uint16_t pulseTime_ = 0;            // temps dun pulse en ms
-float pulsePWM_ = 0;                // Amplitude de la tension au moteur [-1,1]
-
+float pulsePWM_     = 0;            // Amplitude de la tension au moteur [-1,1]
 
 float Axyz[3];                      // tableau pour accelerometre
 float Gxyz[3];                      // tableau pour giroscope
@@ -52,18 +50,22 @@ float Mxyz[3];                      // tableau pour magnetometre
 
 //identification des moteurs
 enum engines{
-REAR,
-FRONT
-
+  REAR, FRONT
 };
 
-double prev_p = 0;
-double cur_p;
-double cur_v;
-double cur_T;
-double lastT = 0;
+namespace {
+  int POTMIN = 7;
+  int POTMAX = 954;
+  int POTAVG = 486;
 
-double tcmd;
+  double prev_p = 0;
+  double cur_p;
+  double cur_v;
+  double cur_T;
+  double lastT = 0;
+
+  double tcmd;
+}
 
 /*------------------------- Prototypes de fonctions -------------------------*/
 
@@ -272,7 +274,19 @@ void readMsg(){
 //TODO: calculer le rapport pour passer de la tension aux deux extremes a un angle en degres
 //min:7  stable:486  max:954
 double getAngle(){
+<<<<<<< HEAD
   return 0;
+=======
+  // Lecture de tension recentree
+  int pot_read = analogRead(POTPIN);
+  pot_read -= POTAVG;
+
+  // Conversion tension a angle
+  float pot_ratio = (POTMAX - POTMIN) / 250.0;
+  float pot_angle = pot_read / pot_ratio;
+  
+  return pot_angle;  
+>>>>>>> 180d7a0d51d6593546df0b7b7c43405ac26dcb81
 }
 
 // Fonctions pour le PID
