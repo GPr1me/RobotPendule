@@ -57,7 +57,7 @@ namespace {
   int POTMIN = 90;
   int POTMAX = 1023;
   int POTAVG = 559;
-  float ANGULAR_RANGE = 197.0;      // °
+  double ANGULAR_RANGE = 197.0;      // °
   double pot_angle;                 // °
 
   double hauteur_obstacle;          // cm
@@ -73,8 +73,14 @@ namespace {
 
   double power_ax;
   double energy_ax;
+  double pot_ratio = (POTMAX - POTMIN) / ANGULAR_RANGE;
 
   double tcmd;
+
+  unsigned long tWave;
+  bool wFlag;
+  bool firstRun;
+
 }
 
 /*------------------------- Prototypes de fonctions -------------------------*/
@@ -86,8 +92,12 @@ void sendMsg();
 void readMsg();
 void serialEvent();
 
+//fonction pour oscillations
+void reachAngle(double angle);
+
 // Fonctions pour le PID
 double computePIDPos();
+double computePIDAng();
 void PIDcommand(double cmd);
 void PIDgoalReached();
 
@@ -136,11 +146,11 @@ void setup() {
   pid_pos.setMeasurementFunc(computePIDPos);
   pid_pos.setCommandFunc(PIDcommand);
   pid_pos.setAtGoalFunc(PIDgoalReached);
-  pid_pos.setEpsilon(0.005); //TODO: valeur par defaut en ce moment. Effet a verifier
+  pid_pos.setEpsilon(0.01); //TODO: valeur par defaut en ce moment. Effet a verifier
   pid_pos.setPeriod(100); //1000 / 10: le pid est ajuste 10 fois par seconde (valeur peut etre changee) 
 
   //pour test sans qt
-  pid_pos.setGoal(0.9); //valeur en distance a atteindre
+  pid_pos.setGoal(0.3); //valeur en distance a atteindre
   pid_pos.enable();
 
   //PID pour oscillations
@@ -151,8 +161,10 @@ void setup() {
   pid_ang.setAtGoalFunc(PIDgoalReached);
   pid_ang.setEpsilon(0.001); //TODO: valeur par defaut en ce moment. Effet a verifier
   pid_ang.setPeriod(100);
+  //pid_ang.setGoal(0);
+  //pid_ang.enable();
 
-  AX_.resetEncoder(1);
+  AX_.resetEncoder(0);
 
   timer = millis();
 
@@ -160,6 +172,8 @@ void setup() {
   pinMode(MAGPIN, OUTPUT);
   pinMode(POTPIN, INPUT);
 
+  wFlag = true;
+  firstRun = true;
 }
 
 /* Boucle principale (infinie)*/
@@ -170,9 +184,11 @@ void loop() {
   AX_.setMotorPWM(FRONT, -1);*/
   //test pour voir Vmax selon mesures
   //Serial.println(getVel());
+
+  unsigned long ctime = (millis() - timer);
   
   //code test pour activer le electroaimant pendant 10 secondes
-  if(10000 > (millis() - timer) ){
+  if(10000 >  ctime){
     digitalWrite(MAGPIN, 1);
   }
   else{
@@ -194,8 +210,19 @@ void loop() {
   timerSendMsg_.update();
   timerPulse_.update();
   
+  //test controleur
+
+
+
+  //test oscillation
+  /*if(wFlag){
+    reachAngle(50);
+  }*/
+
+
   // mise à jour du PID
   pid_pos.run();
+  //pid_ang.run();
   
 }
 
@@ -232,7 +259,6 @@ void sendMsg(){
   doc["cmd"] = tcmd;
   doc["time"] = millis();
   doc["potVex"] = pot_angle;
-  doc["hauteurObstacle"] = hauteur_obstacle;
 
   //doc["encVex"] = vexEncoder_.getCount();
   doc["goal"]      = pid_pos.getGoal();
@@ -274,9 +300,9 @@ void readMsg(){
   }
   
   // Analyse des éléments du message message
-  parse_msg = doc["hauteurObstacle"];
+  parse_msg = doc["hauteur"];
   if(!parse_msg.isNull()){
-     hauteur_obstacle = doc["hauteurObstacle"].as<float>();
+     hauteur_obstacle = doc["hauteur"].as<float>();
   }
 
   parse_msg = doc["pulsePWM"];
@@ -306,6 +332,27 @@ void computePowerEnergy(){
   energy_ax = power_ax / inter_time;
 }
 
+//fonction pour osciller a un angle voulu
+void reachAngle(double angle){
+  pid_pos.disable();
+  unsigned long initTW = millis();
+  while(getAngle() < angle && getAngle() > -angle){
+    tWave = millis() - initTW;
+    double scmd = 0.4*sin(4.8*tWave/1000.0);
+    AX_.setMotorPWM(REAR, scmd);
+    AX_.setMotorPWM(FRONT, -scmd);
+  }
+  AX_.setMotorPWM(REAR, 0);
+  AX_.setMotorPWM(FRONT, 0);
+  wFlag = false;
+  if(firstRun){
+    pid_pos.setGoal(0.5);
+    pid_pos.enable();
+    firstRun = false;
+  }
+
+}
+
 // Fonctions pour le PID
 
 double pulseToMeters(){
@@ -322,7 +369,6 @@ double getAngle(){
   pot_read -= POTAVG;
 
   // Conversion tension a angle
-  float pot_ratio = float(POTMAX - POTMIN) / ANGULAR_RANGE;
   pot_angle = pot_read / pot_ratio;
   
   return pot_angle;  
@@ -380,6 +426,9 @@ void PIDgoalReached(){
   //Serial.println("Valeur de distance mesuree:");
   //Serial.println(pulseToMeters());
   AX_.resetEncoder(1);
+  if(firstRun){
+    reachAngle(50);
+  }
 }
 
 //premier essaie pour le controleur de la position
