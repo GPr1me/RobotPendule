@@ -274,9 +274,6 @@ void readMsg(){
 //TODO: calculer le rapport pour passer de la tension aux deux extremes a un angle en degres
 //min:7  stable:486  max:954
 double getAngle(){
-<<<<<<< HEAD
-  return 0;
-=======
   // Lecture de tension recentree
   int pot_read = analogRead(POTPIN);
   pot_read -= POTAVG;
@@ -286,7 +283,6 @@ double getAngle(){
   float pot_angle = pot_read / pot_ratio;
   
   return pot_angle;  
->>>>>>> 180d7a0d51d6593546df0b7b7c43405ac26dcb81
 }
 
 // Fonctions pour le PID
