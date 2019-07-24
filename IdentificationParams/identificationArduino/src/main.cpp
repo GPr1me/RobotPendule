@@ -9,6 +9,7 @@
 #include <LibS3GRO.h>
 #include <ArduinoJson.h>
 #include <libExample.h> // Vos propres librairies
+#include <math.h>
 /*------------------------------ Constantes ---------------------------------*/
 
 #define BAUD            115200      // Frequence de transmission serielle
@@ -16,7 +17,6 @@
 
 #define MAGPIN          8          // Port numerique pour electroaimant
 #define POTPIN          A5         // Port analogique pour le potentiometre
-//min:7  stable:486  max:954
 
 #define PASPARTOUR      64          // Nombre de pas par tour du moteur
 #define RAPPORTVITESSE  50          // Rapport de vitesse du moteur
@@ -57,8 +57,12 @@ namespace {
   int POTMIN = 90;
   int POTMAX = 1023;
   int POTAVG = 559;
-  float ANGULAR_RANGE = 197.0;
-  float pot_angle;
+  float ANGULAR_RANGE = 197.0;      // °
+  double pot_angle;                 // °
+
+  double hauteur_obstacle;          // cm
+  double longueur_pendule = 0.548;  // m
+  double angle_goal;                // °
 
   double prev_p = 0;
   double cur_p;
@@ -217,6 +221,7 @@ void sendMsg(){
   doc["cmd"] = tcmd;
   doc["time"] = millis();
   doc["potVex"] = pot_angle;
+  doc["hauteurObstacle"] = hauteur_obstacle;
   //doc["encVex"] = vexEncoder_.getCount();
   doc["goal"] = pid_pos.getGoal();
   doc["motorPos"] = PIDmeasurement();
@@ -257,6 +262,11 @@ void readMsg(){
   }
   
   // Analyse des éléments du message message
+  parse_msg = doc["hauteurObstacle"];
+  if(!parse_msg.isNull()){
+     hauteur_obstacle = doc["hauteurObstacle"].as<float>();
+  }
+
   parse_msg = doc["pulsePWM"];
   if(!parse_msg.isNull()){
      pulsePWM_ = doc["pulsePWM"].as<float>();
@@ -273,8 +283,17 @@ void readMsg(){
   }
 }
 
-//TODO: calculer le rapport pour passer de la tension aux deux extremes a un angle en degres
-//min:7  stable:486  max:954
+double computeAngleGoal(){
+  // h = L(1-cos(theta))
+  hauteur_obstacle *= 0.01;
+  angle_goal = 180*acos(1 - hauteur_obstacle / longueur_pendule)/PI;
+
+  return angle_goal;
+}
+
+// Fonctions pour le PID
+
+//fonction pour mesurer la vitesse actuelle
 double getAngle(){
   // Lecture de tension recentree
   int pot_read = analogRead(POTPIN);
@@ -287,9 +306,6 @@ double getAngle(){
   return pot_angle;  
 }
 
-// Fonctions pour le PID
-
-//fonction pour mesurer la vitesse actuelle
 double getVel(){
   // devrait lire la valeur de la vitesse
   //pos actuelle
