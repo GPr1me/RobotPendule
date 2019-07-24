@@ -26,9 +26,11 @@ ArduinoX AX_;                       // objet arduinoX
 MegaServo servo_;                   // objet servomoteur
 VexQuadEncoder vexEncoder_;         // objet encodeur vex
 IMU9DOF imu_;                       // objet imu
+
+//declaration des objets PID
 PID pid_;                           // objet PID
 PID pid_pos;
-PID pid_pendule;
+PID pid_pendule;  //TODO
 
 
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
@@ -47,6 +49,7 @@ float Axyz[3];                      // tableau pour accelerometre
 float Gxyz[3];                      // tableau pour giroscope
 float Mxyz[3];                      // tableau pour magnetometre
 
+//identification des moteurs
 enum engines{
 REAR,
 FRONT
@@ -66,8 +69,9 @@ void serialEvent();
 double PIDmeasurement();
 void PIDcommand(double cmd);
 void PIDgoalReached();
-double pulseToMeters();
-void commandPos(double cmd);
+
+double pulseToMeters(); //fonction pour passer de pulse en m
+void commandPos(double cmd); //fonction pour la commande position
 
 /*---------------------------- fonctions "Main" -----------------------------*/
 
@@ -88,7 +92,7 @@ void setup() {
   timerPulse_.setCallback(endPulse);
   
   // Initialisation du PID
-  /*
+  /* Sample initialisation
   pid_.setGains(5, 0.01 , 0);
     // Attache des fonctions de retour
   pid_.setMeasurementFunc(PIDmeasurement);
@@ -96,24 +100,29 @@ void setup() {
   pid_.setAtGoalFunc(PIDgoalReached);
   pid_.setEpsilon(0.001); //TODO
   
-  pid_.setPeriod(1/4.8);
+  pid_.setPeriod(1000/5);
   */
-  pid_pos.setGains(5, 0.01 , 0);
+
+ //PID pour la position
+  pid_pos.setGains(5, 0.01 , 0); //gains actuels proviennent de la simulation (valeurs a verifier) 
     // Attache des fonctions de retour
   pid_pos.setMeasurementFunc(pulseToMeters);
   pid_pos.setCommandFunc(PIDcommand);
   pid_pos.setAtGoalFunc(PIDgoalReached);
-  pid_pos.setEpsilon(0.001); //TODO
-  pid_pos.setPeriod(1/4.8);
+  pid_pos.setEpsilon(0.001); //TODO: valeur par defaut en ce moment. Effet a verifier
+  pid_pos.setPeriod(200); //1000 / 5: le pid est ajuste 5 fois par seconde (valeur peut etre changee) 
 
-  pid_pendule.setGains(0.2, 0.01 , 0);
+  //TODO: PID pour oscillations
+  //pid_pendule.setGains(0.2, 0.01 , 0); //gains actuels proviennent de la simulation (valeurs a verifier)
 
 }
 
 /* Boucle principale (infinie)*/
 void loop() {
+  //code test pour faire avancer le robot
   AX_.setMotorPWM(REAR, 1);
-  AX_.setMotorPWM(FRONT, -1);  
+  AX_.setMotorPWM(FRONT, -1);
+
   if(shouldRead_){
     readMsg();
   }
@@ -129,7 +138,7 @@ void loop() {
   timerPulse_.update();
   
   // mise à jour du PID
-  pid_.run();
+  pid_pos.run();
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
@@ -240,6 +249,9 @@ double pulseToMeters(){
     return AX_.readEncoder(1) / 3200 * 2 * PI * 0.05;   
 }
 
+//premier essaie pour le controleur de la position
+/* ceci etait cree avant l'app: il est possibe de le modifier pour utiliser un plus semblable a ce qui
+a ete fait dans l'app 6 */
 void commandPos(double cmd){
   //commande si positif
   if(pid_pos.getGoal() > 0){
