@@ -256,7 +256,7 @@ void readMsg(){
 //TODO: calculer le rapport pour passer de la tension aux deux extremes a un angle en degres
 //min:7  stable:486  max:954
 double getAngle(){
-
+  return 0;  
 }
 
 // Fonctions pour le PID
