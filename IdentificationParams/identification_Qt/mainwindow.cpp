@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include "startupmainwindow.h"
 
 MainWindow::MainWindow(int updateRate, QWidget *parent):
     QMainWindow(parent)
@@ -31,6 +32,8 @@ MainWindow::MainWindow(int updateRate, QWidget *parent):
 
     // initialisation du timer
     updateTimer_.start();
+
+
 }
 
 MainWindow::~MainWindow(){
@@ -89,6 +92,10 @@ void MainWindow::receiveFromSerial(QString msg){
     }
 }
 
+void MainWindow::setSerialCom(SerialProtocol* sc){
+    serialCom_ = sc;
+}
+
 void MainWindow::connectTimers(int updateRate){
     // Fonction de connection de timers
     connect(&updateTimer_, &QTimer::timeout, this, [this]{onPeriodicUpdate();});
@@ -105,6 +112,7 @@ void MainWindow::connectButtons(){
     connect(ui->pulseButton, SIGNAL(clicked()), this, SLOT(sendPulseStart()));
     connect(ui->checkBox, SIGNAL(stateChanged(int)), this, SLOT(manageRecording(int)));
     connect(ui->pushButton_Params, SIGNAL(clicked()), this, SLOT(sendPID()));
+    connect(ui->StartButton, SIGNAL(clicked()), this, SLOT(sendStartSignal()));
 }
 
 void MainWindow::connectSpinBoxes(){
@@ -158,6 +166,7 @@ void MainWindow::sendPID(){
     QString strJson(doc.toJson(QJsonDocument::Compact));
     sendMessage(strJson);
 }
+
 void MainWindow::sendPulseSetting(){
     // Fonction SLOT pour envoyer les paramettres de pulse
     double PWM_val = ui->PWMBox->value();
@@ -176,6 +185,16 @@ void MainWindow::sendPulseStart(){
     // Fonction SLOT pour envoyer la commande de pulse
     QJsonObject jsonObject
     {
+        {"pulse", 1}
+    };
+    QJsonDocument doc(jsonObject);
+    QString strJson(doc.toJson(QJsonDocument::Compact));
+    sendMessage(strJson);
+}
+
+void MainWindow::sendStartSignal(){
+    // Fonction SLOT pour signaler le depart des manoeuvres
+    QJsonObject jsonObject{
         {"pulse", 1}
     };
     QJsonDocument doc(jsonObject);
@@ -229,4 +248,16 @@ void MainWindow::onMessageReceived(QString msg){
 void MainWindow::onPeriodicUpdate(){
     // Fonction SLOT appelee a intervalle definie dans le constructeur
     qDebug().noquote() << "*";
+}
+
+
+
+void MainWindow::on_StartButton_clicked()
+{
+
+}
+
+void MainWindow::on_StopButton_clicked()
+{
+    this->close();
 }

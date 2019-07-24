@@ -14,6 +14,7 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts>
 
+
 // Propres librairies
 #include "csvwriter.h"
 #include "serialprotocol.h"
@@ -43,6 +44,10 @@ public:
     void onPeriodicUpdate();
     void onMessageReceived(QString);
 
+    bool shouldOpen();
+    //void connectSerialPortRead();
+    void setSerialCom(SerialProtocol* sc);
+
 private slots:
     void receiveFromSerial(QString);
     void sendPulseSetting();
@@ -51,6 +56,13 @@ private slots:
     void changeJsonKeyValue();
     void startSerialCom(QString);
     void sendPID();
+    void sendStartSignal();
+
+    void on_StartButton_clicked();
+
+    void on_StopButton_clicked();
+
+
 
 private:
     void connectTimers(int updateRate);
