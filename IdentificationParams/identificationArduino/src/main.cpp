@@ -69,6 +69,10 @@ namespace {
   double cur_v;
   double cur_T;
   double lastT = 0;
+  float inter_time;
+
+  double power_ax;
+  double energy_ax;
 
   double tcmd;
 }
@@ -222,21 +226,22 @@ void sendMsg(){
   doc["time"] = millis();
   doc["potVex"] = pot_angle;
   doc["hauteurObstacle"] = hauteur_obstacle;
+
   //doc["encVex"] = vexEncoder_.getCount();
-  doc["goal"] = pid_pos.getGoal();
-  doc["motorPos"] = PIDmeasurement();
-  //doc["voltage"] = AX_.getVoltage();
-  //doc["current"] = AX_.getCurrent(); 
-  doc["pulsePWM"] = pulsePWM_;
+  doc["goal"]      = pid_pos.getGoal();
+  doc["motorPos"]  = PIDmeasurement();
+  doc["power"]     = power_ax;
+  doc["energy"]    = energy_ax;
+  doc["pulsePWM"]  = pulsePWM_;
   doc["pulseTime"] = pulseTime_;
-  doc["inPulse"] = isInPulse_;
-  //doc["accelX"] = imu_.getAccelX();
-  //doc["accelY"] = imu_.getAccelY();
-  //doc["accelZ"] = imu_.getAccelZ();
-  //doc["gyroX"] = imu_.getGyroX();
-  //doc["gyroY"] = imu_.getGyroY();
-  //doc["gyroZ"] = imu_.getGyroZ();
-  doc["isGoal"] = pid_pos.isAtGoal();
+  doc["inPulse"]   = isInPulse_;
+  //doc["accelX"]    = imu_.getAccelX();
+  //doc["accelY"]    = imu_.getAccelY();
+  //doc["accelZ"]    = imu_.getAccelZ();
+  //doc["gyroX"]     = imu_.getGyroX();
+  //doc["gyroY"]     = imu_.getGyroY();
+  //doc["gyroZ"]     = imu_.getGyroZ();
+  doc["isGoal"]   = pid_pos.isAtGoal();
 
   // Serialisation
   serializeJson(doc, Serial);
@@ -283,12 +288,15 @@ void readMsg(){
   }
 }
 
-double computeAngleGoal(){
+void computeAngleGoal(){
   // h = L(1-cos(theta))
   hauteur_obstacle *= 0.01;
   angle_goal = 180*acos(1 - hauteur_obstacle / longueur_pendule)/PI;
+}
 
-  return angle_goal;
+void computePowerEnergy(){
+  power_ax = AX_.getVoltage() * AX_.getCurrent();
+  energy_ax = power_ax / inter_time;
 }
 
 // Fonctions pour le PID
@@ -300,7 +308,7 @@ double getAngle(){
   pot_read -= POTAVG;
 
   // Conversion tension a angle
-  float pot_ratio = (POTMAX - POTMIN) / ANGULAR_RANGE;
+  float pot_ratio = float(POTMAX - POTMIN) / ANGULAR_RANGE;
   pot_angle = pot_read / pot_ratio;
   
   return pot_angle;  
@@ -312,8 +320,10 @@ double getVel(){
   cur_p = pulseToMeters();
   //temps actuel
   cur_T = millis() / 1000;
+  //intervalle de temps
+  inter_time = cur_T - lastT;
   //calcul vitesse
-  cur_v = (cur_p - prev_p)/(cur_T - lastT) * 1.0;
+  cur_v = (cur_p - prev_p)/inter_time;
   //store cur pos as prev pos
   prev_p = cur_p;
   //store cur t as prev t
