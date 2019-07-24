@@ -54,9 +54,10 @@ enum engines{
 };
 
 namespace {
-  int POTMIN = 7;
-  int POTMAX = 954;
-  int POTAVG = 486;
+  int POTMIN = 90;
+  int POTMAX = 1023;
+  int POTAVG = 559;
+  float ANGULAR_RANGE = 197.0;
   float pot_angle;
 
   double prev_p = 0;
@@ -280,7 +281,7 @@ double getAngle(){
   pot_read -= POTAVG;
 
   // Conversion tension a angle
-  float pot_ratio = (POTMAX - POTMIN) / 250.0;
+  float pot_ratio = (POTMAX - POTMIN) / ANGULAR_RANGE;
   pot_angle = pot_read / pot_ratio;
   
   return pot_angle;  
