@@ -2,17 +2,21 @@
 #include "ui_startupmainwindow.h"
 #include "mainwindow.h"
 #include <QDebug>
-
-bool h = 0;
-bool d = 0;
-bool l = 0;
-SerialProtocol* serialCom_=nullptr;
+#include <QSerialPortInfo>
+#include <QtGlobal>
+#include "skipdialog.h"
+#include "passdialog.h"
 
 StartupMainWindow::StartupMainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::StartupMainWindow)
 {
-
+    h = false;
+    d = false;
+    l = false;
+    ss = false;
+    serialCom_ = nullptr;
+    portName_ = " ";
     delayMs = 1000;
     ui->setupUi(this);
     //f = false;
@@ -32,7 +36,15 @@ StartupMainWindow::~StartupMainWindow()
 
 void StartupMainWindow::on_WtvButton_clicked()
 {
-    checkButton();
+    //qDebug() << qPrintable(portName_);
+    if(serialCom_ == nullptr || portName_ == "ttyAMA0"){
+        PassDialog passDialog;
+        passDialog.setModal(true);
+        passDialog.exec();
+    }
+    else{
+        checkButton();
+    }
 }
 
 void StartupMainWindow::HauteurSent()
@@ -84,7 +96,7 @@ void StartupMainWindow::sendPulseSetting(){
     QJsonObject jsonObject
     {// pour minimiser le nombre de decimales( QString::number)
         {"largeur", largeur},
-        {"hauteur", QString::number(hauteur)},
+        {"hauteur", hauteur},
         {"distance", distance}
     };
     QJsonDocument doc(jsonObject);
@@ -146,8 +158,10 @@ void StartupMainWindow::portCensus(){
     }
 }
 
-void StartupMainWindow::startSerialCom(QString portName){
-     qDebug("Waddup");
+void StartupMainWindow::startSerialCom(QString portName)
+{
+    portName_ = portName;
+    //qDebug("Waddup");
     // Fonction SLOT pour demarrer la communication serielle
     qDebug().noquote() << "Connection au port"<< portName;
     if(serialCom_!=nullptr){
@@ -158,18 +172,22 @@ void StartupMainWindow::startSerialCom(QString portName){
     //g->connectSerialPortRead();
 }
 
-//void MainWindow::connectSerialPortRead();
-    // Fonction de connection au message de la classe (serialProtocol)
-    //connect(serialCom_, SIGNAL(newMessage(QString)), this, SLOT(donothing()));
-//}
 
-//void MainWindow::donothing(){
-    //qDebug("Waddup1");
-//}
+void StartupMainWindow::on_skipButton_clicked()
+{
+    SkipDialog skipDialog;
+    skipDialog.setModal(true);
+    //skipDialog.exec();
+    //qDebug("%d", ss);
+    if(skipDialog.exec() == SkipDialog::Accepted){
+        hide();
+        g->show();
+    }
+}
 
-
-
-
+void StartupMainWindow::changeState(){
+    ss = true;
+}
 
 
 

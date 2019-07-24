@@ -33,6 +33,7 @@ public:
     ~StartupMainWindow();
     void sendMessage(QString msg);
     const qint32 BAUD_RATE = 115200;
+    void changeState();
 
 
 private slots:
@@ -47,14 +48,20 @@ private slots:
     void on_Close_clicked();
 
 
+    void on_skipButton_clicked();
+
 private:
+    bool ss;
+    bool h;
+    bool d;
+    bool l;
+    SerialProtocol* serialCom_;
+    QString portName_;
     void portCensus();
-    QString msgBuffer_{""};
+    //QString msgBuffer_{""};
     Ui::StartupMainWindow *ui;
     MainWindow *g;
     int delayMs;
-    //bool f;
-    //void connectSerialPortRead();
     void checkButton();
     void sendPulseSetting();
 

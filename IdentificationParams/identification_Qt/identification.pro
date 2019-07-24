@@ -28,16 +28,22 @@ SOURCES += \
         mainwindow.cpp \
         serialprotocol.cpp \
         csvwriter.cpp \
-    startupmainwindow.cpp
+    startupmainwindow.cpp \
+    skipdialog.cpp \
+    passdialog.cpp
 
 HEADERS += \
         mainwindow.h \
         serialprotocol.h \
         csvwriter.h \
-    startupmainwindow.h
+    startupmainwindow.h \
+    skipdialog.h \
+    passdialog.h
 
 FORMS += \
         mainwindow.ui \
-    startupmainwindow.ui
+    startupmainwindow.ui \
+    skipdialog.ui \
+    passdialog.ui
 
 DISTFILES +=
