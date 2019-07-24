@@ -57,6 +57,7 @@ namespace {
   int POTMIN = 7;
   int POTMAX = 954;
   int POTAVG = 486;
+  float pot_angle;
 
   double prev_p = 0;
   double cur_p;
@@ -214,7 +215,7 @@ void sendMsg(){
 
   doc["cmd"] = tcmd;
   doc["time"] = millis();
-  doc["potVex"] = analogRead(POTPIN);
+  doc["potVex"] = pot_angle;
   //doc["encVex"] = vexEncoder_.getCount();
   doc["goal"] = pid_pos.getGoal();
   doc["motorPos"] = PIDmeasurement();
@@ -280,7 +281,7 @@ double getAngle(){
 
   // Conversion tension a angle
   float pot_ratio = (POTMAX - POTMIN) / 250.0;
-  float pot_angle = pot_read / pot_ratio;
+  pot_angle = pot_read / pot_ratio;
   
   return pot_angle;  
 }
