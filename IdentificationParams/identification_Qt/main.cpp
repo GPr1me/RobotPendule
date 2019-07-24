@@ -1,10 +1,10 @@
-#include "mainwindow.h"
+#include "startupmainwindow.h"
 #include <QApplication>
 
 int main(int argc, char *argv[])
-{   int delayMs = 1000;
+{
     QApplication a(argc, argv);
-    MainWindow w(delayMs);
+    StartupMainWindow w;
     w.show();
     return a.exec();
 }

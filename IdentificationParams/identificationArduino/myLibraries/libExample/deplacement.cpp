@@ -5,6 +5,7 @@ Deplacement::Deplacement(double goal, PID* pid_pos, ArduinoX* ax){
     this->pid_pos = pid_pos;
     (this->pid_pos)->setGoal(goal);
     this->ax = ax;
+
     //(this->pid_pos)->setMeasurementFunc(pulseToMeters);
 }
 Deplacement::~Deplacement(){    
