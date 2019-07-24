@@ -27,9 +27,11 @@ ArduinoX AX_;                       // objet arduinoX
 MegaServo servo_;                   // objet servomoteur
 VexQuadEncoder vexEncoder_;         // objet encodeur vex
 IMU9DOF imu_;                       // objet imu
+
+//declaration des objets PID
 PID pid_;                           // objet PID
 PID pid_pos;
-PID pid_pendule;
+PID pid_pendule;  //TODO
 
 
 volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
@@ -48,6 +50,7 @@ float Axyz[3];                      // tableau pour accelerometre
 float Gxyz[3];                      // tableau pour giroscope
 float Mxyz[3];                      // tableau pour magnetometre
 
+//identification des moteurs
 enum engines{
 REAR,
 FRONT
@@ -75,12 +78,16 @@ void serialEvent();
 double PIDmeasurement();
 void PIDcommand(double cmd);
 void PIDgoalReached();
+
+double pulseToMeters(); //fonction pour passer de pulse en m
+void commandPos(double cmd); //fonction pour la commande position
 double pulseToMeters();
 void commandPos(double cmd);
 double getVel();
 double getAngle();
 
 /*---------------------------- fonctions "Main" -----------------------------*/
+//timer pour test comportement du electroaimant
 unsigned long timer;
 
 void setup() {
@@ -100,7 +107,7 @@ void setup() {
   timerPulse_.setCallback(endPulse);
   
   // Initialisation du PID
-  /*
+  /* Sample initialisation
   pid_.setGains(5, 0.01 , 0);
     // Attache des fonctions de retour
   pid_.setMeasurementFunc(PIDmeasurement);
@@ -108,25 +115,30 @@ void setup() {
   pid_.setAtGoalFunc(PIDgoalReached);
   pid_.setEpsilon(0.001); //TODO
   
-  pid_.setPeriod(1/4.8);
+  pid_.setPeriod(1000/5);
   */
-  pid_pos.setGains(5, 0.02 , 0);
+
+ //PID pour la position
+  pid_pos.setGains(5, 0.02 , 0); //gains actuels proviennent de la simulation (valeurs a verifier) 
     // Attache des fonctions de retour
   pid_pos.setMeasurementFunc(PIDmeasurement);
   pid_pos.setCommandFunc(PIDcommand);
   pid_pos.setAtGoalFunc(PIDgoalReached);
-  pid_pos.setEpsilon(0.001); //TODO
-  pid_pos.setPeriod(50);
+  pid_pos.setEpsilon(0.001); //TODO: valeur par defaut en ce moment. Effet a verifier
+  pid_pos.setPeriod(100); //1000 / 10: le pid est ajuste 10 fois par seconde (valeur peut etre changee) 
 
-  pid_pendule.setGains(0.2, 0.01 , 0);
   //pour test sans qt
-  //pid_pos.setGoal(5.0);
+  //pid_pos.setGoal(5.0); //valeur en distance a atteindre
   //pid_pos.enable();
+
+  //TODO: PID pour oscillations
+  //pid_pendule.setGains(0.2, 0.01 , 0); //gains actuels proviennent de la simulation (valeurs a verifier)
 
   AX_.resetEncoder(1);
 
   timer = millis();
 
+  //code pour activer le potentiometre et le electroaimant
   pinMode(MAGPIN, OUTPUT);
   pinMode(POTPIN, INPUT);
 
@@ -134,9 +146,13 @@ void setup() {
 
 /* Boucle principale (infinie)*/
 void loop() {
-  //AX_.setMotorPWM(REAR, -1);
-  //AX_.setMotorPWM(FRONT, 1); 
+  //code test pour faire avancer le robot
+  /*AX_.setMotorPWM(REAR, 1);
+  AX_.setMotorPWM(FRONT, -1);*/
+  //test pour voir Vmax selon mesures
   //Serial.println(getVel());
+  
+  //code test pour activer le electroaimant pendant 10 secondes
   if(10000 > (millis() - timer) ){
     digitalWrite(MAGPIN, 1);
   }
@@ -261,25 +277,31 @@ double getAngle(){
 
 // Fonctions pour le PID
 
-//1.07 Vmax selon les valeurs lues (front de reference)
+//fonction pour mesurer la vitesse actuelle
 double getVel(){
-  // To do
+  // devrait lire la valeur de la vitesse
+  //pos actuelle
   cur_p = pulseToMeters();
+  //temps actuel
   cur_T = millis() / 1000;
+  //calcul vitesse
   cur_v = (cur_p - prev_p)/(cur_T - lastT) * 1.0;
+  //store cur pos as prev pos
   prev_p = cur_p;
+  //store cur t as prev t
   lastT = cur_T;
+  //retourne la vitesse calculee
   return cur_v;
 }  
-
+//mesure la distance parcourue
 double PIDmeasurement(){
-  // To do
   return pulseToMeters();
 }
 
 void PIDcommand(double cmd){
+  //tcmd utilise pour pouvoir voir la valeur de la cmd envoyee
   tcmd = cmd;
-  // To do
+  //Comportement du PID a verifier
   if(cmd > 1){
     AX_.setMotorPWM(0, -1);
     AX_.setMotorPWM(1, 1);
@@ -293,11 +315,13 @@ void PIDcommand(double cmd){
     AX_.setMotorPWM(1, cmd);
   }
 }
+
+//lorsque objectif atteint arrete au complet et recommence les encodeurs pour mesurer une nouvelle distance
 void PIDgoalReached(){
   // To do
-  AX_.resetEncoder(1);
   AX_.setMotorPWM(0, 0);
   AX_.setMotorPWM(1, 0);
+  AX_.resetEncoder(1);
 }
 
 double pulseToMeters(){
@@ -306,11 +330,11 @@ double pulseToMeters(){
     //longueur de l'arc: angle_en_rads * r
     return AX_.readEncoder(1) / 3200.0 * 2 * PI * 0.05;   
 }
-void commandPos(double cmd){
 
-}
-/* 
-void commandPos(double cmd){
+//premier essaie pour le controleur de la position
+/* ceci etait cree avant l'app: il est possibe de le modifier pour utiliser un plus semblable a ce qui
+a ete fait dans l'app 6 */
+/* void commandPos(double cmd){
   //commande si positif
   if(pid_pos.getGoal() > 0){
     if(cmd >= 0.05){
