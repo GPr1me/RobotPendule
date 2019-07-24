@@ -131,8 +131,8 @@ void setup() {
   pid_pos.setPeriod(100); //1000 / 10: le pid est ajuste 10 fois par seconde (valeur peut etre changee) 
 
   //pour test sans qt
-  //pid_pos.setGoal(5.0); //valeur en distance a atteindre
-  //pid_pos.enable();
+  pid_pos.setGoal(0.9); //valeur en distance a atteindre
+  pid_pos.enable();
 
   //TODO: PID pour oscillations
   //pid_pendule.setGains(0.2, 0.01 , 0); //gains actuels proviennent de la simulation (valeurs a verifier)
@@ -314,16 +314,16 @@ void PIDcommand(double cmd){
   tcmd = cmd;
   //Comportement du PID a verifier
   if(cmd > 1){
-    AX_.setMotorPWM(0, -1);
-    AX_.setMotorPWM(1, 1);
-  }
-  else if(cmd < -1){
     AX_.setMotorPWM(0, 1);
     AX_.setMotorPWM(1, -1);
   }
+  else if(cmd < -1){
+    AX_.setMotorPWM(0, -1);
+    AX_.setMotorPWM(1, 1);
+  }
   else{
-    AX_.setMotorPWM(0, -cmd);
-    AX_.setMotorPWM(1, cmd);
+    AX_.setMotorPWM(0, cmd);
+    AX_.setMotorPWM(1, -cmd);
   }
 }
 
@@ -332,6 +332,8 @@ void PIDgoalReached(){
   // To do
   AX_.setMotorPWM(0, 0);
   AX_.setMotorPWM(1, 0);
+  Serial.println("Valeur de distance mesuree:");
+  Serial.println(pulseToMeters());
   AX_.resetEncoder(1);
 }
 
@@ -339,7 +341,7 @@ double pulseToMeters(){
     //3200 pulses par tour de roue
     //conversion vers rads: encoches/ 3200 * 2 * pi
     //longueur de l'arc: angle_en_rads * r
-    return AX_.readEncoder(1) / 3200.0 * 2 * PI * 0.05;   
+    return AX_.readEncoder(0) / 3200.0 * 2 * PI * 0.05;   
 }
 
 //premier essaie pour le controleur de la position
