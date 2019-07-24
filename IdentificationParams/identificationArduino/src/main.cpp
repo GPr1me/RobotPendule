@@ -31,7 +31,7 @@ IMU9DOF imu_;                       // objet imu
 //declaration des objets PID
 PID pid_;                           // objet PID
 PID pid_pos;
-PID pid_pendule;  //TODO
+PID pid_ang;  //TODO
 
 volatile bool shouldSend_  = false; // drapeau prêt à envoyer un message
 volatile bool shouldRead_  = false; // drapeau prêt à lire un message
@@ -87,7 +87,7 @@ void readMsg();
 void serialEvent();
 
 // Fonctions pour le PID
-double PIDmeasurement();
+double computePIDPos();
 void PIDcommand(double cmd);
 void PIDgoalReached();
 
@@ -122,7 +122,7 @@ void setup() {
   /* Sample initialisation
   pid_.setGains(5, 0.01 , 0);
     // Attache des fonctions de retour
-  pid_.setMeasurementFunc(PIDmeasurement);
+  pid_.setMeasurementFunc(computePIDPos);
   pid_.setCommandFunc(PIDcommand);
   pid_.setAtGoalFunc(PIDgoalReached);
   pid_.setEpsilon(0.001); //TODO
@@ -133,18 +133,24 @@ void setup() {
  //PID pour la position
   pid_pos.setGains(5, 0.02 , 0); //gains actuels proviennent de la simulation (valeurs a verifier) 
     // Attache des fonctions de retour
-  pid_pos.setMeasurementFunc(PIDmeasurement);
+  pid_pos.setMeasurementFunc(computePIDPos);
   pid_pos.setCommandFunc(PIDcommand);
   pid_pos.setAtGoalFunc(PIDgoalReached);
-  pid_pos.setEpsilon(0.001); //TODO: valeur par defaut en ce moment. Effet a verifier
+  pid_pos.setEpsilon(0.005); //TODO: valeur par defaut en ce moment. Effet a verifier
   pid_pos.setPeriod(100); //1000 / 10: le pid est ajuste 10 fois par seconde (valeur peut etre changee) 
 
   //pour test sans qt
   pid_pos.setGoal(0.9); //valeur en distance a atteindre
   pid_pos.enable();
 
-  //TODO: PID pour oscillations
-  //pid_pendule.setGains(0.2, 0.01 , 0); //gains actuels proviennent de la simulation (valeurs a verifier)
+  //PID pour oscillations
+  pid_ang.setGains(0.2, 0.01 , 0); //gains actuels proviennent de la simulation (valeurs a verifier) 
+    // Attache des fonctions de retour
+  pid_ang.setMeasurementFunc(computePIDAng);
+  pid_ang.setCommandFunc(PIDcommand);
+  pid_ang.setAtGoalFunc(PIDgoalReached);
+  pid_ang.setEpsilon(0.001); //TODO: valeur par defaut en ce moment. Effet a verifier
+  pid_ang.setPeriod(100);
 
   AX_.resetEncoder(1);
 
@@ -229,7 +235,7 @@ void sendMsg(){
 
   //doc["encVex"] = vexEncoder_.getCount();
   doc["goal"]      = pid_pos.getGoal();
-  doc["motorPos"]  = PIDmeasurement();
+  doc["motorPos"]  = computePIDPos();
   doc["power"]     = power_ax;
   doc["energy"]    = energy_ax;
   doc["pulsePWM"]  = pulsePWM_;
@@ -301,6 +307,13 @@ void computePowerEnergy(){
 
 // Fonctions pour le PID
 
+double pulseToMeters(){
+    //3200 pulses par tour de roue
+    //conversion vers rads: encoches/ 3200 * 2 * pi
+    //longueur de l'arc: angle_en_rads * r
+    return AX_.readEncoder(0) / float(PASPARTOUR * RAPPORTVITESSE) * 2 * PI * 0.05;   
+}
+
 //fonction pour mesurer la vitesse actuelle
 double getAngle(){
   // Lecture de tension recentree
@@ -332,8 +345,12 @@ double getVel(){
   return cur_v;
 }  
 //mesure la distance parcourue
-double PIDmeasurement(){
+double computePIDPos(){
   return pulseToMeters();
+}
+//mesure l'angle du pendule
+double computePIDAng(){
+  return getAngle();
 }
 
 void PIDcommand(double cmd){
@@ -359,16 +376,9 @@ void PIDgoalReached(){
   // To do
   AX_.setMotorPWM(0, 0);
   AX_.setMotorPWM(1, 0);
-  Serial.println("Valeur de distance mesuree:");
-  Serial.println(pulseToMeters());
+  //Serial.println("Valeur de distance mesuree:");
+  //Serial.println(pulseToMeters());
   AX_.resetEncoder(1);
-}
-
-double pulseToMeters(){
-    //3200 pulses par tour de roue
-    //conversion vers rads: encoches/ 3200 * 2 * pi
-    //longueur de l'arc: angle_en_rads * r
-    return AX_.readEncoder(0) / 3200.0 * 2 * PI * 0.05;   
 }
 
 //premier essaie pour le controleur de la position
