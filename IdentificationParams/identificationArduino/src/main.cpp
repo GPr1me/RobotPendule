@@ -107,6 +107,7 @@ double pulseToMeters();
 void commandPos(double cmd);
 double getVel();
 double getAngle();
+void goalReachedAngle(); //gestion pour maintenir l'angle pendant une distane donnee
 
 /*---------------------------- fonctions "Main" -----------------------------*/
 //timer pour test comportement du electroaimant
@@ -150,19 +151,19 @@ void setup() {
   pid_pos.setPeriod(100); //1000 / 10: le pid est ajuste 10 fois par seconde (valeur peut etre changee) 
 
   //pour test sans qt
-  pid_pos.setGoal(0.3); //valeur en distance a atteindre
-  pid_pos.enable();
+  //pid_pos.setGoal(0.3); //valeur en distance a atteindre
+  //pid_pos.enable();
 
   //PID pour oscillations
-  pid_ang.setGains(0.2, 0.01 , 0); //gains actuels proviennent de la simulation (valeurs a verifier) 
+  pid_ang.setGains(0.2, 0.01 , 0.001); //gains actuels proviennent de la simulation (valeurs a verifier) 
     // Attache des fonctions de retour
   pid_ang.setMeasurementFunc(computePIDAng);
   pid_ang.setCommandFunc(PIDcommand);
   pid_ang.setAtGoalFunc(PIDgoalReached);
   pid_ang.setEpsilon(0.001); //TODO: valeur par defaut en ce moment. Effet a verifier
   pid_ang.setPeriod(100);
-  //pid_ang.setGoal(0);
-  //pid_ang.enable();
+  pid_ang.setGoal(20);
+  pid_ang.enable();
 
   AX_.resetEncoder(0);
 
@@ -180,8 +181,8 @@ void setup() {
 void loop() {
 
   //code test pour faire avancer le robot
-  /*AX_.setMotorPWM(REAR, 1);
-  AX_.setMotorPWM(FRONT, -1);*/
+  /*AX_.setMotorPWM(REAR, 0);
+  AX_.setMotorPWM(FRONT, 0);*/
   //test pour voir Vmax selon mesures
   //Serial.println(getVel());
 
@@ -210,8 +211,7 @@ void loop() {
   timerSendMsg_.update();
   timerPulse_.update();
   
-  //test controleur
-
+  //test controleur pendule
 
 
   //test oscillation
@@ -221,7 +221,7 @@ void loop() {
 
 
   // mise à jour du PID
-  pid_pos.run();
+  //pid_pos.run();
   //pid_ang.run();
   
 }
@@ -430,6 +430,21 @@ void PIDgoalReached(){
     reachAngle(50);
   }
 }
+
+//gestion desiree, coninuer a maintenir l'angle pendant une distance voulue
+void goalReachedAngle(){
+  if(5000 > millis() - timer){
+    pid_ang.enable();
+  }
+  else{
+    AX_.setMotorPWM(0, 0);
+    AX_.setMotorPWM(1, 0);
+    //Serial.println("Valeur de distance mesuree:");
+    //Serial.println(pulseToMeters());
+    AX_.resetEncoder(1);
+  }
+}
+
 
 //premier essaie pour le controleur de la position
 /* ceci etait cree avant l'app: il est possibe de le modifier pour utiliser un plus semblable a ce qui
