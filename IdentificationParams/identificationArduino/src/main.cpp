@@ -109,6 +109,9 @@ double getVel();
 double getAngle();
 void goalReachedAngle(); //gestion pour maintenir l'angle pendant une distane donnee
 
+void computeAngleGoal();
+void computePowerEnergy();
+
 /*---------------------------- fonctions "Main" -----------------------------*/
 //timer pour test comportement du electroaimant
 unsigned long timer;
@@ -162,10 +165,12 @@ void setup() {
   pid_ang.setAtGoalFunc(PIDgoalReached);
   pid_ang.setEpsilon(3); //TODO: valeur par defaut en ce moment. Effet a verifier
   pid_ang.setPeriod(100);
-  pid_ang.setGoal(20);
-  pid_ang.enable();
+  //pid_ang.setGoal(20);
+  //pid_ang.enable();
 
   AX_.resetEncoder(0);
+
+  computeAngleGoal();
 
   timer = millis();
 
@@ -222,8 +227,8 @@ void loop() {
 
   // mise à jour du PID
   //pid_pos.run();
-  pid_ang.run();
-  Serial.println(20-getAngle());
+  //pid_ang.run();
+  //Serial.println((angle_goal-getAngle()));
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
