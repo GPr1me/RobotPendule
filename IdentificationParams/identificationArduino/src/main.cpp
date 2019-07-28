@@ -76,6 +76,7 @@ namespace {
   double pot_ratio = (POTMAX - POTMIN) / ANGULAR_RANGE;
 
   double tcmd;
+  double acmd;
 
   unsigned long tWave;
   bool wFlag;
@@ -108,6 +109,7 @@ void commandPos(double cmd);
 double getVel();
 double getAngle();
 void goalReachedAngle(); //gestion pour maintenir l'angle pendant une distane donnee
+void PIDcommandAngle(double cmd);
 
 void computeAngleGoal();
 void computePowerEnergy();
@@ -127,10 +129,10 @@ void setup() {
   // Chronometre envoie message
   timerSendMsg_.setDelay(UPDATE_PERIODE);
   timerSendMsg_.setCallback(timerCallback);
-  timerSendMsg_.enable();
+  /*timerSendMsg_.enable();
 
   // Chronometre duration pulse
-  timerPulse_.setCallback(endPulse);
+  timerPulse_.setCallback(endPulse);*/
   
   // Initialisation du PID
   /* Sample initialisation
@@ -157,20 +159,20 @@ void setup() {
   //pid_pos.setGoal(0.3); //valeur en distance a atteindre
   //pid_pos.enable();
 
-  //PID pour oscillations
-  pid_ang.setGains(0.04, 0.001 , 0.001); //gains actuels proviennent de la simulation (valeurs a verifier) 
+  //PID pour angle
+  pid_ang.setGains(0.05, 0.0001, 0.001); //gains actuels proviennent de la simulation (valeurs a verifier) 
     // Attache des fonctions de retour
   pid_ang.setMeasurementFunc(computePIDAng);
   pid_ang.setCommandFunc(PIDcommand);
-  pid_ang.setAtGoalFunc(PIDgoalReached);
-  pid_ang.setEpsilon(3); //TODO: valeur par defaut en ce moment. Effet a verifier
-  pid_ang.setPeriod(100);
-  //pid_ang.setGoal(20);
-  //pid_ang.enable();
+  pid_ang.setAtGoalFunc(goalReachedAngle);
+  pid_ang.setEpsilon(4); //TODO: valeur par defaut en ce moment. Effet a verifier
+  pid_ang.setPeriod(4);
+  pid_ang.setGoal(10);
+  pid_ang.enable();
 
   AX_.resetEncoder(0);
 
-  //computeAngleGoal();
+  computeAngleGoal();
 
   timer = millis();
 
@@ -178,8 +180,11 @@ void setup() {
   pinMode(MAGPIN, OUTPUT);
   pinMode(POTPIN, INPUT);
 
+  //set valeur initiales
   wFlag = true;
   firstRun = true;
+  acmd = 0;
+  cur_T = millis() / 1000.0;
 }
 
 /* Boucle principale (infinie)*/
@@ -201,7 +206,7 @@ void loop() {
     digitalWrite(MAGPIN, 0);
   }
   // decommenter cette ligne pour reactiver la communication avec QT
-    
+  /*  
   if(shouldRead_){
     readMsg();
   }
@@ -215,20 +220,25 @@ void loop() {
   // mise a jour des chronometres
   timerSendMsg_.update();
   timerPulse_.update();
-  
+  */
   //test controleur pendule
-
-
+  if(40 > getAngle()){
+    pid_ang.run();
+  }
+  else{
+    pid_ang.disable();
+    AX_.setMotorPWM(REAR, 0);
+    AX_.setMotorPWM(FRONT, 0);
+  }
   //test oscillation
   /*if(wFlag){
     reachAngle(50);
   }*/
 
-
   // mise à jour du PID
   //pid_pos.run();
   //pid_ang.run();
-  //Serial.println((angle_goal-getAngle()));
+  //Serial.println((20-getAngle()));
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
@@ -367,18 +377,6 @@ double pulseToMeters(){
     return AX_.readEncoder(0) / float(PASPARTOUR * RAPPORTVITESSE) * 2 * PI * 0.05;   
 }
 
-//fonction pour mesurer la vitesse actuelle
-double getAngle(){
-  // Lecture de tension recentree
-  int pot_read = analogRead(POTPIN);
-  pot_read -= POTAVG;
-
-  // Conversion tension a angle
-  pot_angle = pot_read / -pot_ratio;
-  
-  return pot_angle;  
-}
-
 double getVel(){
   // devrait lire la valeur de la vitesse
   //pos actuelle
@@ -438,7 +436,7 @@ void PIDgoalReached(){
 
 //gestion desiree, coninuer a maintenir l'angle pendant une distance voulue
 void goalReachedAngle(){
-  if(2000 > millis() - timer){
+  if(4000 > millis() - timer){
     pid_ang.enable();
   }
   else{
@@ -450,6 +448,36 @@ void goalReachedAngle(){
   }
 }
 
+//fonction pour mesurer l'angle actuel
+double getAngle(){
+  // Lecture de tension recentree
+  int pot_read = analogRead(POTPIN);
+  pot_read -= POTAVG;
+
+  // Conversion tension a angle
+  pot_angle = pot_read / -pot_ratio;
+  
+  return pot_angle;  
+}
+
+void PIDcommandAngle(double cmd){
+  //acmd utilise pour pouvoir voir la valeur de la cmd envoyee
+  //addition afin d'essayer de maintenir la vitesse une fois la commande rendu a 0
+  acmd += cmd;
+  //Comportement du PID a verifier
+  if(acmd > 1){
+    AX_.setMotorPWM(0, 1);
+    AX_.setMotorPWM(1, -1);
+  }
+  else if(acmd < -1){
+    AX_.setMotorPWM(0, -1);
+    AX_.setMotorPWM(1, 1);
+  }
+  else{
+    AX_.setMotorPWM(0, acmd);
+    AX_.setMotorPWM(1, -acmd);
+  }
+}
 
 //premier essaie pour le controleur de la position
 /* ceci etait cree avant l'app: il est possibe de le modifier pour utiliser un plus semblable a ce qui
