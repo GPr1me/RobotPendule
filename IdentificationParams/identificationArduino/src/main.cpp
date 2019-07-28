@@ -195,8 +195,8 @@ void loop() {
   else{
     digitalWrite(MAGPIN, 0);
   }
-  
-   
+  // decommenter cette ligne pour reactiver la communication avec QT
+  /*  
   if(shouldRead_){
     readMsg();
   }
@@ -206,11 +206,11 @@ void loop() {
   if(shouldPulse_){
     startPulse();
   }
-
+  
   // mise a jour des chronometres
   timerSendMsg_.update();
   timerPulse_.update();
-  
+  */
   //test controleur pendule
 
 
@@ -223,7 +223,7 @@ void loop() {
   // mise à jour du PID
   //pid_pos.run();
   pid_ang.run();
-  
+  Serial.println(20-getAngle());
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
