@@ -155,12 +155,12 @@ void setup() {
   //pid_pos.enable();
 
   //PID pour oscillations
-  pid_ang.setGains(0.2, 0.01 , 0.001); //gains actuels proviennent de la simulation (valeurs a verifier) 
+  pid_ang.setGains(0.04, 0.001 , 0.001); //gains actuels proviennent de la simulation (valeurs a verifier) 
     // Attache des fonctions de retour
   pid_ang.setMeasurementFunc(computePIDAng);
   pid_ang.setCommandFunc(PIDcommand);
   pid_ang.setAtGoalFunc(PIDgoalReached);
-  pid_ang.setEpsilon(0.001); //TODO: valeur par defaut en ce moment. Effet a verifier
+  pid_ang.setEpsilon(3); //TODO: valeur par defaut en ce moment. Effet a verifier
   pid_ang.setPeriod(100);
   pid_ang.setGoal(20);
   pid_ang.enable();
@@ -222,7 +222,7 @@ void loop() {
 
   // mise à jour du PID
   //pid_pos.run();
-  //pid_ang.run();
+  pid_ang.run();
   
 }
 
@@ -369,7 +369,7 @@ double getAngle(){
   pot_read -= POTAVG;
 
   // Conversion tension a angle
-  pot_angle = pot_read / pot_ratio;
+  pot_angle = pot_read / -pot_ratio;
   
   return pot_angle;  
 }
@@ -433,7 +433,7 @@ void PIDgoalReached(){
 
 //gestion desiree, coninuer a maintenir l'angle pendant une distance voulue
 void goalReachedAngle(){
-  if(5000 > millis() - timer){
+  if(2000 > millis() - timer){
     pid_ang.enable();
   }
   else{
