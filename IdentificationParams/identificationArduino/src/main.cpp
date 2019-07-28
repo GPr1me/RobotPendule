@@ -170,7 +170,7 @@ void setup() {
 
   AX_.resetEncoder(0);
 
-  computeAngleGoal();
+  //computeAngleGoal();
 
   timer = millis();
 
@@ -201,7 +201,7 @@ void loop() {
     digitalWrite(MAGPIN, 0);
   }
   // decommenter cette ligne pour reactiver la communication avec QT
-  /*  
+    
   if(shouldRead_){
     readMsg();
   }
@@ -215,7 +215,7 @@ void loop() {
   // mise a jour des chronometres
   timerSendMsg_.update();
   timerPulse_.update();
-  */
+  
   //test controleur pendule
 
 
