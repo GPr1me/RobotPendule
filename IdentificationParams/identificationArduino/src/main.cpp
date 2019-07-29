@@ -81,7 +81,7 @@ namespace {
   unsigned long tWave;
   bool wFlag;
   bool firstRun;
-
+  bool endRun;
 }
 
 /*------------------------- Prototypes de fonctions -------------------------*/
@@ -165,10 +165,10 @@ void setup() {
   pid_ang.setMeasurementFunc(computePIDAng);
   pid_ang.setCommandFunc(PIDcommand);
   pid_ang.setAtGoalFunc(goalReachedAngle);
-  pid_ang.setEpsilon(4); //TODO: valeur par defaut en ce moment. Effet a verifier
+  pid_ang.setEpsilon(3); //TODO: valeur par defaut en ce moment. Effet a verifier
   pid_ang.setPeriod(4);
-  pid_ang.setGoal(10);
-  pid_ang.enable();
+  //pid_ang.setGoal(10);
+  //pid_ang.enable();
 
   AX_.resetEncoder(0);
 
@@ -183,6 +183,7 @@ void setup() {
   //set valeur initiales
   wFlag = true;
   firstRun = true;
+  endRun = false;
   acmd = 0;
   cur_T = millis() / 1000.0;
 }
@@ -190,46 +191,76 @@ void setup() {
 /* Boucle principale (infinie)*/
 void loop() {
 
-  //code test pour faire avancer le robot
-  /*AX_.setMotorPWM(REAR, 0);
-  AX_.setMotorPWM(FRONT, 0);*/
+  
   //test pour voir Vmax selon mesures
   //Serial.println(getVel());
-
-  unsigned long ctime = (millis() - timer);
-  
-  //code test pour activer le electroaimant pendant 10 secondes
-  if(10000 >  ctime){
-    digitalWrite(MAGPIN, 1);
+  if(endRun){
+    //arret a la fin
+    AX_.setMotorPWM(REAR, 0);
+    AX_.setMotorPWM(FRONT, 0);
+     
+    if(shouldRead_){
+      readMsg();
+    }
+    if(shouldSend_){
+      sendMsg();
+    }
+    if(shouldPulse_){
+      startPulse();
+    }
+    
+    // mise a jour des chronometres
+    timerSendMsg_.update();
+    timerPulse_.update();
+    
   }
+  //run
   else{
-    digitalWrite(MAGPIN, 0);
+    unsigned long ctime = (millis() - timer);
+    
+    //code test pour activer le electroaimant pendant 10 secondes
+    if(10000 >  ctime){
+      digitalWrite(MAGPIN, 1);
+    }
+    else{
+      digitalWrite(MAGPIN, 0);
+    }
+    // decommenter cette ligne pour reactiver la communication avec QT
+    /*  
+    if(shouldRead_){
+      readMsg();
+    }
+    if(shouldSend_){
+      sendMsg();
+    }
+    if(shouldPulse_){
+      startPulse();
+    }
+    
+    // mise a jour des chronometres
+    timerSendMsg_.update();
+    timerPulse_.update();
+    */
+    //test controleur pendule
+    if(wFlag){
+      reachAngle(-20);
+      wFlag = false;
+    }
+    if(firstRun){
+      pid_pos.setGoal(0.9);
+      pid_pos.enable();
+      firstRun = false;
+    }
+    pid_pos.run();
   }
-  // decommenter cette ligne pour reactiver la communication avec QT
-  /*  
-  if(shouldRead_){
-    readMsg();
-  }
-  if(shouldSend_){
-    sendMsg();
-  }
-  if(shouldPulse_){
-    startPulse();
-  }
-  
-  // mise a jour des chronometres
-  timerSendMsg_.update();
-  timerPulse_.update();
-  */
-  //test controleur pendule
-  if(40 > getAngle()){
+  /*if(40 < getAngle()){
     pid_ang.run();
   }
   else{
     pid_ang.disable();
     AX_.setMotorPWM(REAR, 0);
     AX_.setMotorPWM(FRONT, 0);
-  }
+  }*/
   //test oscillation
   /*if(wFlag){
     reachAngle(50);
@@ -351,20 +382,29 @@ void computePowerEnergy(){
 void reachAngle(double angle){
   pid_pos.disable();
   unsigned long initTW = millis();
-  while(getAngle() < angle && getAngle() > -angle){
-    tWave = millis() - initTW;
-    double scmd = 0.4*sin(4.8*tWave/1000.0);
-    AX_.setMotorPWM(REAR, scmd);
-    AX_.setMotorPWM(FRONT, -scmd);
+  if(angle < 0){
+    while(getAngle() >= angle){
+      tWave = millis() - initTW;
+      double scmd = 0.4*sin(4.8*tWave/1000.0);
+      AX_.setMotorPWM(REAR, scmd);
+      AX_.setMotorPWM(FRONT, -scmd);
+    }
+  }
+  else{
+    while(getAngle() <= angle){
+      tWave = millis() - initTW;
+      double scmd = 0.4*sin(4.8*tWave/1000.0);
+      AX_.setMotorPWM(REAR, scmd);
+      AX_.setMotorPWM(FRONT, -scmd);
+    }
   }
   AX_.setMotorPWM(REAR, 0);
   AX_.setMotorPWM(FRONT, 0);
   wFlag = false;
-  if(firstRun){
-    pid_pos.setGoal(0.5);
+  /*if(firstRun){
+    pid_pos.setGoal(0.9);
     pid_pos.enable();
-    firstRun = false;
-  }
+  }*/
 
 }
 
@@ -423,29 +463,25 @@ void PIDcommand(double cmd){
 
 //lorsque objectif atteint arrete au complet et recommence les encodeurs pour mesurer une nouvelle distance
 void PIDgoalReached(){
-  // To do
   AX_.setMotorPWM(0, 0);
   AX_.setMotorPWM(1, 0);
   //Serial.println("Valeur de distance mesuree:");
   //Serial.println(pulseToMeters());
   AX_.resetEncoder(1);
-  if(firstRun){
-    reachAngle(50);
-  }
+  
+  pid_ang.setGoal(0);
+  pid_ang.enable();
+  
 }
 
 //gestion desiree, coninuer a maintenir l'angle pendant une distance voulue
 void goalReachedAngle(){
-  if(4000 > millis() - timer){
-    pid_ang.enable();
-  }
-  else{
-    AX_.setMotorPWM(0, 0);
-    AX_.setMotorPWM(1, 0);
-    //Serial.println("Valeur de distance mesuree:");
-    //Serial.println(pulseToMeters());
-    AX_.resetEncoder(1);
-  }
+  AX_.setMotorPWM(0, 0);
+  AX_.setMotorPWM(1, 0);
+  //Serial.println("Valeur de distance mesuree:");
+  //Serial.println(pulseToMeters());
+  AX_.resetEncoder(1);
+  endRun = 1;
 }
 
 //fonction pour mesurer l'angle actuel
@@ -463,7 +499,7 @@ double getAngle(){
 void PIDcommandAngle(double cmd){
   //acmd utilise pour pouvoir voir la valeur de la cmd envoyee
   //addition afin d'essayer de maintenir la vitesse une fois la commande rendu a 0
-  acmd += cmd;
+  acmd = cmd;
   //Comportement du PID a verifier
   if(acmd > 1){
     AX_.setMotorPWM(0, 1);
