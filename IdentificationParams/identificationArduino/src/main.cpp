@@ -10,6 +10,7 @@
 #include <ArduinoJson.h>
 #include <libExample.h> // Vos propres librairies
 #include <math.h>
+#include <AngleController.h>
 /*------------------------------ Constantes ---------------------------------*/
 
 #define BAUD            115200      // Frequence de transmission serielle
@@ -31,7 +32,7 @@ IMU9DOF imu_;                       // objet imu
 //declaration des objets PID
 PID pid_;                           // objet PID
 PID pid_pos;
-PID pid_ang;  //TODO
+AngleController pid_ang;  //TODO
 
 volatile bool shouldSend_  = false; // drapeau prêt à envoyer un message
 volatile bool shouldRead_  = false; // drapeau prêt à lire un message
@@ -164,7 +165,7 @@ void setup() {
   pid_ang.setGains(0.05, 0.0001, 0.001); //gains actuels proviennent de la simulation (valeurs a verifier) 
     // Attache des fonctions de retour
   pid_ang.setMeasurementFunc(computePIDAng);
-  pid_ang.setCommandFunc(PIDcommand);
+  pid_ang.setCommandFunc(AngleCommand);
   pid_ang.setAtGoalFunc(goalReachedAngle);
   pid_ang.setEpsilon(3); //TODO: valeur par defaut en ce moment. Effet a verifier
   pid_ang.setPeriod(4);
@@ -386,7 +387,7 @@ void computePowerEnergy(){
 
 //fonction pour osciller a un angle voulu
 void reachAngle(double angle){
-  pid_pos.disable();
+  // pid_pos.disable();
   unsigned long initTW = millis();
   if(angle < 0){
     while(getAngle() >= angle){
@@ -520,6 +521,12 @@ void PIDcommandAngle(double cmd){
     AX_.setMotorPWM(0, acmd);
     AX_.setMotorPWM(1, -acmd);
   }
+}
+
+void AngleCommand(double scmd)
+{
+  AX_.setMotorPWM(REAR, scmd);
+  AX_.setMotorPWM(FRONT, -scmd);
 }
 
 //premier essaie pour le controleur de la position
