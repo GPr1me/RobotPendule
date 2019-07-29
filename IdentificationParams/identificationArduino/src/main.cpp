@@ -222,11 +222,16 @@ void loop() {
   timerPulse_.update();
   */
   //test controleur pendule
-  if(40 > getAngle()){
+  if(!pid_ang.isAtGoal){
     pid_ang.run();
   }
+  else if(!pid_pos.isAtGoal){
+    // pid_ang.disable();
+    pid_pos.run();
+    // AX_.setMotorPWM(REAR, 0);
+    // AX_.setMotorPWM(FRONT, 0);
+  }
   else{
-    pid_ang.disable();
     AX_.setMotorPWM(REAR, 0);
     AX_.setMotorPWM(FRONT, 0);
   }
@@ -440,8 +445,8 @@ void goalReachedAngle(){
     pid_ang.enable();
   }
   else{
-    AX_.setMotorPWM(0, 0);
-    AX_.setMotorPWM(1, 0);
+    // AX_.setMotorPWM(0, 0);
+    // AX_.setMotorPWM(1, 0);
     //Serial.println("Valeur de distance mesuree:");
     //Serial.println(pulseToMeters());
     AX_.resetEncoder(1);
