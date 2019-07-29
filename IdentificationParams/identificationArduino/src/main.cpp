@@ -69,7 +69,8 @@ namespace {
   double cur_v;
   double cur_T;
   double lastT = 0;
-  float inter_time;
+  float  inter_time;
+  double dist_;
 
   double power_ax;
   double energy_ax;
@@ -256,8 +257,13 @@ void loop() {
   /*if(40 < getAngle()){
     pid_ang.run();
   }
+  else if(!pid_pos.isAtGoal){
+    // pid_ang.disable();
+    pid_pos.run();
+    // AX_.setMotorPWM(REAR, 0);
+    // AX_.setMotorPWM(FRONT, 0);
+  }
   else{
-    pid_ang.disable();
     AX_.setMotorPWM(REAR, 0);
     AX_.setMotorPWM(FRONT, 0);
   }*/
@@ -308,7 +314,7 @@ void sendMsg(){
 
   //doc["encVex"] = vexEncoder_.getCount();
   doc["goal"]      = pid_pos.getGoal();
-  doc["motorPos"]  = computePIDPos();
+  doc["motorPos"]  = dist_;
   doc["power"]     = power_ax;
   doc["energy"]    = energy_ax;
   doc["pulsePWM"]  = pulsePWM_;
@@ -414,7 +420,8 @@ double pulseToMeters(){
     //3200 pulses par tour de roue
     //conversion vers rads: encoches/ 3200 * 2 * pi
     //longueur de l'arc: angle_en_rads * r
-    return AX_.readEncoder(0) / float(PASPARTOUR * RAPPORTVITESSE) * 2 * PI * 0.05;   
+    dist_ = AX_.readEncoder(0) / float(PASPARTOUR * RAPPORTVITESSE) * 2 * PI * 0.05;
+    return dist_;
 }
 
 double getVel(){
