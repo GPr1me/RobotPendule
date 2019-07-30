@@ -22,9 +22,9 @@ void AngleController::run()
         {
             atGoal_ = true;
             enable_ = false;
-            if(atGoalFunc != nullptr)
+            if(atGoalFunc_ != nullptr)
             {
-                atGoalFunc();
+                atGoalFunc_();
             }
         }
     }
