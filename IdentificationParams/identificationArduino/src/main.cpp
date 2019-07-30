@@ -58,7 +58,7 @@ enum engines{
 namespace {
   int POTMIN = 90;
   int POTMAX = 1023;
-  int POTAVG = 559;
+  int POTAVG = 452;
   double ANGULAR_RANGE = 197.0;      // °
   double pot_angle;                 // °
 
@@ -141,6 +141,8 @@ void setup() {
 
   // Chronometre duration pulse
   timerPulse_.setCallback(endPulse);
+
+  
   
   // Initialisation du PID
   /* Sample initialisation
@@ -202,11 +204,26 @@ void setup() {
 
 /* Boucle principale (infinie)*/
 void loop() {
+  // mise a jour des chronometres
+    timerSendMsg_.update();
+    timerPulse_.update();
 
-  
+    // Comm avec le PI
+    if(shouldRead_){
+      readMsg();
+    }
+    if(shouldSend_){
+      sendMsg();
+    }
+    if(shouldPulse_){
+      startPulse();
+    }
+
+    pid_pos.run();
+    pid_ang.run();
   //test pour voir Vmax selon mesures
   //Serial.println(getVel());
-  if(endRun){
+  /*if(endRun){
     //arret a la fin
     AX_.setMotorPWM(REAR, 0);
     AX_.setMotorPWM(FRONT, 0);
@@ -253,6 +270,17 @@ void loop() {
     timerSendMsg_.update();
     timerPulse_.update();
 
+    // Comm avec le PI
+    if(shouldRead_){
+      readMsg();
+    }
+    if(shouldSend_){
+      sendMsg();
+    }
+    if(shouldPulse_){
+      startPulse();
+    }
+
     // test controleur pendule(baseball game)
     // if(wFlag){
     //   reachAngle(-30);
@@ -265,16 +293,9 @@ void loop() {
     // }
     // pid_pos.run();
     // pid_ang.run();
-  }
+  }*/
 
-  if(!pid_pos.isAtGoal())
-  {
-    pid_pos.run();
-  }
-  else if (!pid_ang.isAtGoal())
-  {
-    pid_ang.run();
-  }
+  
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
