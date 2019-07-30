@@ -125,7 +125,7 @@ void setup()
   timerPulse_.setCallback(endPulse);
 
   // Init controller
-  controller = new RobotController(); // Mettre les callback de séquencement ici
+  controller = new RobotController(); // Mettre les callback de séquencement en arguments du constructeurs
 
   controller->setupPOS(computePIDPosition, PIDCommand, PIDgoalReached);
   controller->setupANGLE(getAngle, computePIDAngle, PIDCommandAngle, goalReachedAngle);
