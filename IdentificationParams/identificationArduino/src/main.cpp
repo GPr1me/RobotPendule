@@ -231,14 +231,14 @@ void loop() {
     unsigned long ctime = (millis() - timer);
     
     //code test pour activer le electroaimant pendant 10 secondes
-    if(20000 >  ctime){
-      digitalWrite(MAGPIN, 1);
-    }
-    else{
-      digitalWrite(MAGPIN, 0);
-    }
-    // decommenter cette ligne pour reactiver la communication avec QT
-    /*  
+    // if(20000 >  ctime){
+    //   digitalWrite(MAGPIN, 1);
+    // }
+    // else{
+    //   digitalWrite(MAGPIN, 0);
+    // }
+    
+    // Comm avec le PI
     if(shouldRead_){
       readMsg();
     }
@@ -252,46 +252,29 @@ void loop() {
     // mise a jour des chronometres
     timerSendMsg_.update();
     timerPulse_.update();
-    */
-    //test controleur pendule(baseball game)
-    if(wFlag){
-      reachAngle(-30);
-      wFlag = false;
-    }
-    if(firstRun){
-      pid_pos.setGoal(0);//test pos 0 to check only angle
-      pid_pos.enable();
-      firstRun = false;
-    }
-    pid_pos.run();
-    pid_ang.run();
-    // if(20 < millis() - timer){
-    //   Serial.println(getAngleSpeed());
-    //   timer = millis();
-    // }
-  }
-  /*if(40 < getAngle()){
-    pid_ang.run();
-  }
-  else if(!pid_pos.isAtGoal){
-    // pid_ang.disable();
-    pid_pos.run();
-    // AX_.setMotorPWM(REAR, 0);
-    // AX_.setMotorPWM(FRONT, 0);
-  }
-  else{
-    AX_.setMotorPWM(REAR, 0);
-    AX_.setMotorPWM(FRONT, 0);
-  }*/
-  //test oscillation
-  /*if(wFlag){
-    reachAngle(50);
-  }*/
 
-  // mise à jour du PID
-  //pid_pos.run();
-  //pid_ang.run();
-  //Serial.println((20-getAngle()));
+    // test controleur pendule(baseball game)
+    // if(wFlag){
+    //   reachAngle(-30);
+    //   wFlag = false;
+    // }
+    // if(firstRun){
+    //   pid_pos.setGoal(0);//test pos 0 to check only angle
+    //   pid_pos.enable();
+    //   firstRun = false;
+    // }
+    // pid_pos.run();
+    // pid_ang.run();
+  }
+
+  if(!pid_pos.isAtGoal)
+  {
+    pid_pos.run();
+  }
+  else if (!pid_ang.isAtGoal)
+  {
+    pid_ang.run();
+  }
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
@@ -549,6 +532,7 @@ void goalReachedAngle(){
     //Serial.println("Valeur de distance mesuree:");
     //Serial.println(pulseToMeters());
     AX_.resetEncoder(1);
+    pid_pos.enable();
     endRun = 1;
   // }
 }
