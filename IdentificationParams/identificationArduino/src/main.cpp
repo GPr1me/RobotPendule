@@ -560,7 +560,7 @@ double computePIDAng(){
       return angle;
     }
   }
-  return getAngle()+getAngleSpeed()*0;
+  return getAngle();
 }
 
 void PIDcommand(double cmd){
@@ -604,6 +604,7 @@ void PIDgoalReached(){
   AX_.resetEncoder(0);
   //attends a que l'angle soit negatif
   while(getAngle() < 0){
+    //condition do exit if no wait needed
     if(countA > 3){
       break;
     }
