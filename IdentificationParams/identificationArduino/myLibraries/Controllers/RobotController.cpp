@@ -38,8 +38,6 @@ RobotController::~RobotController()
     }
 }
 
-<<<<<<< HEAD
-=======
 void RobotController::setupActions(int count, ...)
 {
     va_list args;
@@ -61,7 +59,6 @@ void RobotController::setupActions(int count, ...)
     // actions[5] = returnToDefaultPosition;
 }
 
->>>>>>> 87478811666ae4b80fd535dfdc413febb1efcb68
 void RobotController::setupPOS(double (*measurementFunc)(),
                                void (*commandFunc)(double),
                                void (*atGoalFunc)())
