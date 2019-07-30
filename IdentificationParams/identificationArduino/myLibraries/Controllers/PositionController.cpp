@@ -31,7 +31,7 @@ void PositionController::setup(double (*measurementFunc)(),
                                void (*commandFunc)(double),
                                void (*atGoalFunc)())
 {
-    pid_->setGains(5, 0.02, 0);
+    pid_->setGains(5, 0.02, 0); // CAN BE SET WITH QT?
     pid_->setMeasurementFunc(measurementFunc);
     pid_->setCommandFunc(commandFunc);
     pid_->setAtGoalFunc(atGoalFunc);
