@@ -266,7 +266,7 @@ void loop() {
   }
   //run
   else{
-    if(5000 <= millis() - timer && doT){
+    if(3000 <= millis() - timer && doT){
       wFlag = true;
       doT = false;      
     }
