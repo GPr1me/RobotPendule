@@ -11,7 +11,7 @@ Class to control an angle PID
 #include <Arduino.h>
 #include <LibS3GRO.h>
 
-class AngleController : PID
+class AngleController : public PID
 {
     public:
     void run();
