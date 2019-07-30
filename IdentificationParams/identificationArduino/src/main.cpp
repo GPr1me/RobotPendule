@@ -267,11 +267,11 @@ void loop() {
     // pid_ang.run();
   }
 
-  if(!pid_pos.isAtGoal)
+  if(!pid_pos.isAtGoal())
   {
     pid_pos.run();
   }
-  else if (!pid_ang.isAtGoal)
+  else if (!pid_ang.isAtGoal())
   {
     pid_ang.run();
   }
