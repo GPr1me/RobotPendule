@@ -103,7 +103,7 @@ namespace {
 
   //timer pour test comportement du electroaimant
   unsigned long timer;  
-
+  unsigned long timer2;
 }
 
 /*------------------------- Prototypes de fonctions -------------------------*/
@@ -196,6 +196,7 @@ void setup() {
   computeAngleGoal();
 
   timer = millis();
+  timer2 = millis();
 
   //code pour activer le potentiometre et le electroaimant
   pinMode(MAGPIN, OUTPUT);
@@ -204,6 +205,8 @@ void setup() {
   //set valeur initiales
   wFlag = true;
   firstRun = false;
+  energy_ax = 0;
+  power_ax = 0;
   //endRun = true;
   acmd = 0;
   cur_T = millis() / 1000.0;
@@ -259,7 +262,8 @@ void loop() {
       digitalWrite(MAGPIN, 1);
       timer = millis();
       wFlag = false;
-      doT = true;  
+      doT = true;
+      energy_ax = 0;  
     }
     pid_pos.run();
     pid_ang.run();
@@ -344,6 +348,7 @@ void endPulse(){
 }
 
 void sendMsg(){
+  computePowerEnergy();
   /* Envoit du message Json sur le port seriel */
   StaticJsonDocument<500> doc;
   // Elements du message
@@ -376,6 +381,7 @@ void sendMsg(){
   // Envoit
   Serial.println();
   shouldSend_ = false;
+  timer2 = millis();
 }
 
 void readMsg(){
@@ -448,7 +454,7 @@ void computeAngleGoal(){
 
 void computePowerEnergy(){
   power_ax = AX_.getVoltage() * AX_.getCurrent();
-  energy_ax = power_ax / inter_time;
+  energy_ax += power_ax / (millis() - timer2);
 }
 
 //fonction pour osciller a un angle voulu
