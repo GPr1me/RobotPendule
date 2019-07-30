@@ -14,6 +14,7 @@ void PID_angle::run()
         unsigned long initTW = millis();
         if (angleCommand_() < goal_ && angleCommand_() > -goal_ && enable_)
         {
+            // AMPLITUDE TO BE SET ACCORDING TO THE OBJECTIVE (MINIMISE ENERGY OR TIME)
             unsigned long tWave = millis() - initTW;
             double scmd = 0.4 * sin(4.8 * tWave / 1000.0);
             commandFunc_(scmd);

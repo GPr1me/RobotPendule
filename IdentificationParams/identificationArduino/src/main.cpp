@@ -88,21 +88,6 @@ namespace {
   int countA;
 }
 
-// volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
-// volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
-// volatile bool shouldPulse_ = false; // drapeau pour effectuer un pulse
-// volatile bool isInPulse_ = false;   // drapeau pour effectuer un pulse
-
-// SoftTimer timerSendMsg_; // chronometre d'envoie de messages
-// SoftTimer timerPulse_;   // chronometre pour la duree d'un pulse
-
-// uint16_t pulseTime_ = 0; // temps dun pulse en ms
-// float pulsePWM_ = 0;     // Amplitude de la tension au moteur [-1,1]
-
-// float Axyz[3]; // tableau pour accelerometre
-// float Gxyz[3]; // tableau pour giroscope
-// float Mxyz[3]; // tableau pour magnetometre
-
 /*------------------------- Prototypes de fonctions -------------------------*/
 
 void timerCallback();
@@ -330,16 +315,6 @@ double computePIDAng(){
   }
   return getAngle()+getAngleSpeed()*0;
 }
-
-// //calcul de la vitesse angulaire
-// double getAngleSpeed(){
-//   double cur_phi = getAngle();
-//   double cur_Ti = millis();
-//   speed_phi = (cur_phi - prev_phi)/((cur_Ti - prev_Ti)/1000.0);
-//   prev_Ti = cur_Ti;
-//   prev_phi = cur_phi;
-//   return speed_phi;
-// }
 
 //fonction pour mesurer l'angle actuel
 double getAngle(){

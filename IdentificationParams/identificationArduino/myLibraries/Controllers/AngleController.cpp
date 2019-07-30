@@ -32,7 +32,7 @@ void AngleController::setup(double (*angleCommand)(),
                             void (*commandFunc)(double),
                             void(*atGoalFunc)())
 {
-    pid_->setGains(0.008, 0, 0.0002);
+    pid_->setGains(0.008, 0, 0.0002);  // CAN BE SET WITH QT?
     pid_->setMeasurementFunc(measurementFunc);
     pid_->setCommandFunc(commandFunc);
     pid_->setAtGoalFunc(atGoalFunc);
