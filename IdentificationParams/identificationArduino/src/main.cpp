@@ -101,6 +101,9 @@ namespace {
   bool noSwing;
   bool hasTree;
 
+  //timer pour test comportement du electroaimant
+  unsigned long timer;  
+
 }
 
 /*------------------------- Prototypes de fonctions -------------------------*/
@@ -134,8 +137,7 @@ void computeAngleGoal();
 void computePowerEnergy();
 
 /*---------------------------- fonctions "Main" -----------------------------*/
-//timer pour test comportement du electroaimant
-unsigned long timer;
+
 
 void setup() {
   Serial.begin(BAUD);               // initialisation de la communication serielle
@@ -171,7 +173,7 @@ void setup() {
   pid_pos.setMeasurementFunc(computePIDPos);
   pid_pos.setCommandFunc(PIDcommand);
   pid_pos.setAtGoalFunc(PIDgoalReached);
-  pid_pos.setEpsilon(0.01); //TODO: valeur par defaut en ce moment. Effet a verifier
+  pid_pos.setEpsilon(0.015); //TODO: valeur par defaut en ce moment. Effet a verifier
   pid_pos.setPeriod(100); //1000 / 10: le pid est ajuste 10 fois par seconde (valeur peut etre changee) 
 
   //pour test sans qt
@@ -184,7 +186,7 @@ void setup() {
   pid_ang.setMeasurementFunc(computePIDAng);
   pid_ang.setCommandFunc(PIDcommandAngle);
   pid_ang.setAtGoalFunc(goalReachedAngle);
-  pid_ang.setEpsilon(1); //TODO: valeur par defaut en ce moment. 
+  pid_ang.setEpsilon(2); //TODO: valeur par defaut en ce moment. 
   pid_ang.setPeriod(20);
   //pid_ang.setGoal(10);
   //pid_ang.enable();
@@ -202,7 +204,7 @@ void setup() {
   //set valeur initiales
   wFlag = true;
   firstRun = false;
-  endRun = false;
+  //endRun = true;
   acmd = 0;
   cur_T = millis() / 1000.0;
   countA = 0;
@@ -216,14 +218,14 @@ void setup() {
   //active aimant
   digitalWrite(MAGPIN, 1);
 }
-
+bool doT;
 /* Boucle principale (infinie)*/
 void loop() {
 
   
   //test pour voir Vmax selon mesures
   //Serial.println(getVel());
-  if(endRun){
+  if(!starto){
     //arret a la fin
     AX_.setMotorPWM(REAR, 0);
     AX_.setMotorPWM(FRONT, 0);
@@ -241,14 +243,33 @@ void loop() {
     // mise a jour des chronometres
     timerSendMsg_.update();
     timerPulse_.update();
-    
     if(starto){
-      endRun = false;
+      //set valeur initiales
+      firstRun = false;
+      //endRun = true;
+      acmd = 0;
+      cur_T = millis() / 1000.0;
+      countA = 0;
+
+      prev_Ti = 0;
+      prev_phi = 0;
+      beginO = 1;
+      noSwing = 1;
+      //active aimant
+      digitalWrite(MAGPIN, 1);
+      timer = millis();
+      wFlag = false;
+      doT = true;  
     }
+    pid_pos.run();
+    pid_ang.run();
   }
   //run
   else{
-    unsigned long ctime = (millis() - timer);
+    if(5000 <= millis() - timer && doT){
+      wFlag = true;
+      doT = false;      
+    }
     
     //code test pour activer le electroaimant pendant 10 secondes
     /* if(20000 >  ctime){
@@ -570,15 +591,14 @@ void PIDgoalReached(){
     AX_.setMotorPWM(0, 0);
     AX_.setMotorPWM(1, 0);
     timerAngle = millis();
-    while(2000 > millis() - timerAngle){
-      digitalWrite(MAGPIN, 0);
-    }
+    digitalWrite(MAGPIN, 0);
+    
     if(countA < 4){
       pid_pos.setGoal(-1.1);
       pid_pos.enable();
     }
-    if(countA >= 5){
-      endRun = true;
+    if(countA >= 4){
+      starto = false;
     }
   }
   AX_.resetEncoder(0);
@@ -599,7 +619,7 @@ void PIDgoalReached(){
 //gestion desiree, coninuer a maintenir l'angle pendant une distance voulue
 void goalReachedAngle(){
   double sA = getAngleSpeed();
-  if(sA > 90 || sA < -90){
+  if(sA > 20 || sA < -20){
     pid_ang.setGoal(0);
     pid_ang.enable();
     // countA++;

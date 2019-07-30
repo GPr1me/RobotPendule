@@ -195,7 +195,7 @@ void MainWindow::sendPulseStart(){
 void MainWindow::sendStartSignal(){
     // Fonction SLOT pour signaler le depart des manoeuvres
     QJsonObject jsonObject{
-        {"pulse", 1}
+        {"start", 1}
     };
     QJsonDocument doc(jsonObject);
     QString strJson(doc.toJson(QJsonDocument::Compact));
