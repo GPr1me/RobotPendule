@@ -9,7 +9,6 @@ Class to control an angle PID
 
 void AngleController::run()
 {
-    /*
     if (enable_)
     {
         unsigned long initTW = millis();
@@ -29,5 +28,4 @@ void AngleController::run()
             }
         }
     }
-    */
 }

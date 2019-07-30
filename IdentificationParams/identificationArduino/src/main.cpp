@@ -137,10 +137,10 @@ void setup() {
   // Chronometre envoie message
   timerSendMsg_.setDelay(UPDATE_PERIODE);
   timerSendMsg_.setCallback(timerCallback);
-  /*timerSendMsg_.enable();
+  timerSendMsg_.enable();
 
   // Chronometre duration pulse
-  timerPulse_.setCallback(endPulse);*/
+  timerPulse_.setCallback(endPulse);
   
   // Initialisation du PID
   /* Sample initialisation
@@ -309,7 +309,7 @@ void sendMsg(){
 
   doc["cmd"] = tcmd;
   doc["time"] = millis();
-  doc["potVex"] = pot_angle;
+  doc["potVex"] = getAngle();
 
   //doc["encVex"] = vexEncoder_.getCount();
   doc["goal"]      = pid_pos.getGoal();
@@ -370,6 +370,15 @@ void readMsg(){
   if(!parse_msg.isNull()){
      shouldPulse_ = doc["pulse"];
   }
+  parse_msg = doc["setGoal"];
+  if(!parse_msg.isNull()){
+     pid_pos.disable();
+     pid_pos.setGains(doc["setGoal"][0], doc["setGoal"][1], doc["setGoal"][2]);
+     pid_pos.setEpsilon(doc["setGoal"][3]);
+     pid_pos.setGoal(doc["setGoal"][4]);
+     pid_pos.enable();
+  }
+  
 }
 
 void computeAngleGoal(){
