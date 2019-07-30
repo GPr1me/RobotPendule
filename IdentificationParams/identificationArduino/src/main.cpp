@@ -24,12 +24,12 @@
 
 /*---------------------------- variables globales ---------------------------*/
 
-ArduinoX AX_;               // objet arduinoX
-MegaServo servo_;           // objet servomoteur
-VexQuadEncoder vexEncoder_; // objet encodeur vex
-IMU9DOF imu_;               // objet imu
-// PID pid_;                           // objet PID
-RobotController *controller;
+ArduinoX AX_;                // objet arduinoX
+MegaServo servo_;            // objet servomoteur
+VexQuadEncoder vexEncoder_;  // objet encodeur vex
+IMU9DOF imu_;                // objet imu
+// PID pid_;                   // objet PID
+RobotController *controller; // objet robotControlleur
 
 volatile bool shouldSend_  = false; // drapeau prêt à envoyer un message
 volatile bool shouldRead_  = false; // drapeau prêt à lire un message
@@ -42,9 +42,9 @@ SoftTimer timerPulse_;              // chronometre pour la duree d'un pulse
 uint16_t pulseTime_ = 0;            // temps dun pulse en ms
 float pulsePWM_     = 0;            // Amplitude de la tension au moteur [-1,1]
 
-float Axyz[3];                      // tableau pour accelerometre
-float Gxyz[3];                      // tableau pour giroscope
-float Mxyz[3];                      // tableau pour magnetometre
+//float Axyz[3];                      // tableau pour accelerometre
+//float Gxyz[3];                      // tableau pour giroscope
+//float Mxyz[3];                      // tableau pour magnetometre
 
 //identification des moteurs
 enum engines{
@@ -52,40 +52,30 @@ enum engines{
 };
 
 namespace {
+  // Variables temporelles
+  double current_time_;
+  double previous_time_ = 0;
+  double time_interval_;
+
+  // Variables angulaires
   int POTMIN = 90;
   int POTMAX = 1023;
-  int POTAVG = 559;
+  int POTAVG = 452;
   double ANGULAR_RANGE = 197.0;      // °
+  double pot_ratio = (POTMAX - POTMIN) / ANGULAR_RANGE;
   double pot_angle;                 // °
 
-  double hauteur_obstacle;          // cm
-  double longueur_pendule = 0.548;  // m
-  double angle_goal;                // °
+  // Variables lineaires
+  double current_position_;
+  double previous_position_ = 0;
+  double current_speed_;
 
-  double prev_p = 0;
-  double cur_p;
-  double cur_v;
-  double cur_T;
-  double lastT = 0;
-  double prev_Ti;
-  double prev_phi;
-  double speed_phi;
-  float  inter_time;
-  double dist_;
-
-  double power_ax;
-  double energy_ax;
-  double pot_ratio = (POTMAX - POTMIN) / ANGULAR_RANGE;
-
-  double tcmd;
-  double acmd;
-
-  unsigned long tWave;
-  bool wFlag;
-  bool firstRun;
-  bool endRun;
-
-  int countA;
+  // Variables de consommation
+  double power_ax_;
+  double energy_ax_;
+  
+  // Variables de commandes
+  double position_command_;
 }
 
 /*------------------------- Prototypes de fonctions -------------------------*/
@@ -101,19 +91,16 @@ void serialEvent();
 void reachAngle(double angle);
 
 // Fonctions pour le PID
-double computePIDPos();
-double computePIDAng();
-void PIDcommand(double cmd);
+double computePIDPosition();
+double computePIDAngle();
+void PIDCommand(double cmd);
 void PIDgoalReached();
 
-double pulseToMeters(); //fonction pour passer de pulse en m
 void commandPos(double cmd); //fonction pour la commande position
-double pulseToMeters();
-void commandPos(double cmd);
-double getVel();
+double getLinearVelocity();
 double getAngle();
 void goalReachedAngle(); //gestion pour maintenir l'angle pendant une distane donnee
-void PIDcommandAngle(double cmd);
+void PIDCommandAngle(double cmd);
 double getAngleSpeed();
 void computeAngleGoal();
 void computePowerEnergy();
@@ -140,8 +127,8 @@ void setup()
   // Init controller
   controller = new RobotController(); // Mettre les callback de séquencement ici
 
-  controller->setupPOS(computePIDPos, PIDcommand, PIDgoalReached);
-  controller->setupANGLE(getAngle, computePIDAng, PIDcommandAngle, goalReachedAngle);
+  controller->setupPOS(computePIDPosition, PIDCommand, PIDgoalReached);
+  controller->setupANGLE(getAngle, computePIDAngle, PIDCommandAngle, goalReachedAngle);
 }
 
 /* Boucle principale (infinie)*/
@@ -181,8 +168,8 @@ void startPulse()
   timerPulse_.setDelay(pulseTime_);
   timerPulse_.enable();
   timerPulse_.setRepetition(1);
-  AX_.setMotorPWM(0, pulsePWM_);
-  AX_.setMotorPWM(1, pulsePWM_);
+  AX_.setMotorPWM(FRONT, pulsePWM_);
+  AX_.setMotorPWM(REAR, -pulsePWM_);
   shouldPulse_ = false;
   isInPulse_ = true;
 }
@@ -190,8 +177,8 @@ void startPulse()
 void endPulse()
 {
   /* Rappel du chronometre */
-  AX_.setMotorPWM(0, 0);
-  AX_.setMotorPWM(1, 0);
+  AX_.setMotorPWM(FRONT, 0);
+  AX_.setMotorPWM(REAR, 0);
   timerPulse_.disable();
   isInPulse_ = false;
 }
@@ -202,23 +189,26 @@ void sendMsg()
   StaticJsonDocument<500> doc;
   // Elements du message
 
-  doc["time"] = millis();
-  doc["potVex"] = analogRead(POTPIN);
-  doc["encVex"] = vexEncoder_.getCount();
-  doc["goal"] = controller->getActiveController->getGoal();
-  doc["motorPos"] = PIDmeasurement();
-  doc["voltage"] = AX_.getVoltage();
-  doc["current"] = AX_.getCurrent();
-  doc["pulsePWM"] = pulsePWM_;
+  doc["time"]      = millis();
+  doc["potVex"]    = analogRead(POTPIN);
+  doc["encVex"]    = vexEncoder_.getCount();
+  doc["goal"]      = controller->getActiveController->getGoal();
+  doc["cmd"]       = position_command_;
+  doc["motorPos"]  = current_position_;
+  //doc["voltage"]   = AX_.getVoltage();
+  //doc["current"]   = AX_.getCurrent();
+  doc["power"]     = power_ax_;
+  doc["energy"]    = energy_ax_;
+  doc["pulsePWM"]  = pulsePWM_;
   doc["pulseTime"] = pulseTime_;
-  doc["inPulse"] = isInPulse_;
-  doc["accelX"] = imu_.getAccelX();
-  doc["accelY"] = imu_.getAccelY();
-  doc["accelZ"] = imu_.getAccelZ();
-  doc["gyroX"] = imu_.getGyroX();
-  doc["gyroY"] = imu_.getGyroY();
-  doc["gyroZ"] = imu_.getGyroZ();
-  doc["isGoal"] = controller->getActiveController->isAtGoal();
+  doc["inPulse"]   = isInPulse_;
+  //doc["accelX"]    = imu_.getAccelX();
+  //doc["accelY"]    = imu_.getAccelY();
+  //doc["accelZ"]    = imu_.getAccelZ();
+  //doc["gyroX"]     = imu_.getGyroX();
+  //doc["gyroY"]     = imu_.getGyroY();
+  //doc["gyroZ"]     = imu_.getGyroZ();
+  doc["isGoal"]    = controller->getActiveController->isAtGoal();
 
   // Serialisation
   serializeJson(doc, Serial);
@@ -265,35 +255,63 @@ void readMsg()
   }
 }
 
-// Fonctions pour le PID
-double PIDmeasurement()
+// Fonction qui calcule la vitesse 
+double getLinearVelocity()
 {
-  // To do
-  return 0;
-}
-void PIDcommand(double cmd)
+  current_time_      = millis() / 1000;
+  time_interval_     = current_time_ - previous_time_;
+  current_speed_     = (current_position_ - previous_position_)/time_interval_;
+  previous_position_ = current_position_;
+  previous_time_     = current_time_;
+
+  return current_speed_;
+}  
+
+// Fonctions pour envoyer la commande aux moteurs
+void PIDCommand(double cmd)
 {
-  // To do
+  //variable globale utilisee pour Json
+  position_command_ = cmd;
+
+  if(position_command_ > 1)
+  {
+    AX_.setMotorPWM(FRONT, -1);
+    AX_.setMotorPWM(REAR, 1);
+  }
+  else if(position_command_ < -1)
+  {
+    AX_.setMotorPWM(FRONT, 1);
+    AX_.setMotorPWM(REAR, -1);
+  }
+  else
+  {
+    AX_.setMotorPWM(FRONT, -position_command_);
+    AX_.setMotorPWM(REAR, position_command_);
+  }
 }
+
+
 void PIDgoalReached()
 {
   // To do
 }
 
-void angleCommandFunc(double scmd)
+void angleCommandFunc(double angle_command_)
 {
-  AX_.setMotorPWM(0, scmd);
-  AX_.setMotorPWM(1, scmd);
+  AX_.setMotorPWM(FRONT, angle_command_);
+  AX_.setMotorPWM(REAR, angle_command_);
 }
 
 // mesure la distance parcourue
-double computePIDPos()
+double computePIDPosition()
 {
-  return AX_.readEncoder(0) / float(PASPARTOUR * RAPPORTVITESSE) * 2 * PI * 0.05;
+  current_position_ = AX_.readEncoder(REAR) / float(PASPARTOUR * RAPPORTVITESSE) * 2 * PI * 0.05;
+  return current_position_;
 }
 
 //mesure l'angle du pendule
-double computePIDAng(){
+double computePIDAngle()
+{
   double angle = getAngle();
   if(angle < 2 && angle >= 0){
     double sp = getAngleSpeed();
@@ -326,4 +344,11 @@ double getAngle(){
   pot_angle = pot_read / -pot_ratio;
   
   return pot_angle;  
+}
+
+// Fonction qui calcule la puissance et l'energie de la carte Arduino X
+void computePowerEnergy()
+{
+  power_ax_ = AX_.getVoltage() * AX_.getCurrent();
+  energy_ax_ = power_ax_ / time_interval_;
 }
