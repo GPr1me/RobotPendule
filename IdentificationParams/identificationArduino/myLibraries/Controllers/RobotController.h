@@ -38,6 +38,7 @@ public:
                     void (*oscillationDecrease)(),
                     void (*lastPositionning)(),
                     void (*returnToDefaultPosition)());
+
     RobotController(PositionController *positionController,
                     AngleController *angleController,
                     void (*firstPositionning)(),
@@ -49,19 +50,20 @@ public:
 
     ~RobotController();
 
-    
-    void setupActions(int count, ...);
-
     void setupPOS(double (*measurementFunc)(),
                   void (*commandFunc)(double),
                   void (*atGoalFunc)());
+
     void setupANGLE(double (*angleCommand)(),
                     double (*measurementFunc)(),
                     void (*commandFunc)(double),
                     void (*atGoalFunc)());
 
+    // Not yet useful
+    // PositionController* getPositionController(){ return positionController_; };
+    // AngleController* getAngleController(){ return angleController_; };
+
     Controller *getActiveController();
-    void switchActiveController();
 
     Status currentStatus() { return status_; };
     void changeStatus();
@@ -71,6 +73,9 @@ public:
     String ToString();
 
 private:
+
+    void setupActions(int count, ...);
+
     PositionController *positionController_ = nullptr;
     AngleController *angleController_ = nullptr;
 

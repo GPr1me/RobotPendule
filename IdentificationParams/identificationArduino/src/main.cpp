@@ -189,26 +189,27 @@ void sendMsg()
   StaticJsonDocument<500> doc;
   // Elements du message
 
-  doc["time"]      = millis();
-  doc["potVex"]    = analogRead(POTPIN);
-  doc["encVex"]    = vexEncoder_.getCount();
-  doc["goal"]      = controller->getActiveController->getGoal();
-  doc["cmd"]       = position_command_;
-  doc["motorPos"]  = current_position_;
-  //doc["voltage"]   = AX_.getVoltage();
-  //doc["current"]   = AX_.getCurrent();
-  doc["power"]     = power_ax_;
-  doc["energy"]    = energy_ax_;
-  doc["pulsePWM"]  = pulsePWM_;
-  doc["pulseTime"] = pulseTime_;
-  doc["inPulse"]   = isInPulse_;
-  //doc["accelX"]    = imu_.getAccelX();
-  //doc["accelY"]    = imu_.getAccelY();
-  //doc["accelZ"]    = imu_.getAccelZ();
-  //doc["gyroX"]     = imu_.getGyroX();
-  //doc["gyroY"]     = imu_.getGyroY();
-  //doc["gyroZ"]     = imu_.getGyroZ();
-  doc["isGoal"]    = controller->getActiveController->isAtGoal();
+  doc["time"]             = millis();
+  doc["potVex"]           = analogRead(POTPIN);
+  doc["encVex"]           = vexEncoder_.getCount();
+  doc["goal"]             = controller->getActiveController->getGoal();
+  doc["cmd"]              = position_command_;
+  doc["motorPos"]         = current_position_;
+  // doc["voltage"]          = AX_.getVoltage();
+  // doc["current"]          = AX_.getCurrent();
+  doc["power"]            = power_ax_;
+  doc["energy"]           = energy_ax_;
+  doc["pulsePWM"]         = pulsePWM_;
+  doc["pulseTime"]        = pulseTime_;
+  doc["inPulse"]          = isInPulse_;
+  // doc["accelX"]           = imu_.getAccelX();
+  // doc["accelY"]           = imu_.getAccelY();
+  // doc["accelZ"]           = imu_.getAccelZ();
+  // doc["gyroX"]            = imu_.getGyroX();
+  // doc["gyroY"]            = imu_.getGyroY();
+  // doc["gyroZ"]            = imu_.getGyroZ();
+  doc["isGoal"]           = controller->getActiveController->isAtGoal();
+  doc["activeController"] = controller->getActiveController->ToString();
 
   // Serialisation
   serializeJson(doc, Serial);
