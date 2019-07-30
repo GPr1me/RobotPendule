@@ -7,14 +7,34 @@ Class to control the project robot mouvements
 
 #include "RobotController.h"
 
-RobotController::RobotController()
+RobotController::RobotController(void (*firstPositionning)(),
+                                 void (*oscillationIncrease)(),
+                                 void (*stepOverObstacle)(),
+                                 void (*oscillationDecrease)(),
+                                 void (*lastPositionning)(),
+                                 void (*returnToDefaultPosition)())
 {
     positionController_ = new PositionController();
     angleController_ = new AngleController();
+
     runCompleted_ = false;
+
+    setupActions(NUMBER_OF_STEPS,
+                 firstPositionning,
+                 oscillationIncrease,
+                 stepOverObstacle,
+                 oscillationDecrease,
+                 lastPositionning,
+                 returnToDefaultPosition);
 }
 RobotController::RobotController(PositionController *positionController,
-                                 AngleController *angleController)
+                                 AngleController *angleController,
+                                 void (*firstPositionning)(),
+                                 void (*oscillationIncrease)(),
+                                 void (*stepOverObstacle)(),
+                                 void (*oscillationDecrease)(),
+                                 void (*lastPositionning)(),
+                                 void (*returnToDefaultPosition)())
 {
     positionController_ = positionController;
     angleController_ = angleController;
@@ -24,6 +44,14 @@ RobotController::RobotController(PositionController *positionController,
     angleController_->disable();
 
     runCompleted_ = false;
+
+    setupActions(NUMBER_OF_STEPS,
+                 firstPositionning,
+                 oscillationIncrease,
+                 stepOverObstacle,
+                 oscillationDecrease,
+                 lastPositionning,
+                 returnToDefaultPosition);
 }
 
 RobotController::~RobotController()
@@ -36,6 +64,25 @@ RobotController::~RobotController()
     {
         delete angleController_;
     }
+}
+
+void RobotController::setupActions(int count, ...)
+{
+    va_list args;
+    for(int i = 0; i < count; i++)
+    {
+        actions[i] = va_arg(args, Callback);
+    }
+
+    // ********************************
+    // * In case variable args breaks *
+    // ********************************
+    // actions[0] = firstPositionning;
+    // actions[1] = oscillationIncrease;
+    // actions[2] = stepOverObstacle;
+    // actions[3] = oscillationDecrease;
+    // actions[4] = lastPositionning;
+    // actions[5] = returnToDefaultPosition;
 }
 
 void RobotController::setupPOS(double (*measurementFunc)(),
@@ -78,53 +125,66 @@ Controller *RobotController::getActiveController()
     }
 }
 
-void RobotController::changeStatus(Status status)
-{
-}
-
-void RobotController::run()
+void RobotController::changeStatus()
 {
     switch (status_)
     {
     case firstPositionning:
+
         if (positionController_->isAtGoal())
         {
-            changeStatus(oscillationIncrease);
+            status_ = oscillationIncrease;
+            angleController_->enable();
         }
         break;
 
     case oscillationIncrease:
         if (angleController_->isAtGoal())
         {
-            changeStatus(stepOverObstacle);
+            status_ = stepOverObstacle;
+            positionController_->enable();
         }
         break;
 
     case stepOverObstacle:
         if (positionController_->isAtGoal())
         {
-            changeStatus(oscillationDecrease);
+            status_ = oscillationDecrease;
+            angleController_->enable();
         }
         break;
 
     case oscillationDecrease:
         if (angleController_->isAtGoal())
         {
-            changeStatus(lastPositionning);
+            status_ = lastPositionning;
+            positionController_->enable();
         }
         break;
 
     case lastPositionning:
         if (positionController_->isAtGoal())
         {
-            changeStatus(returnToDefaultPosition);
+            status_ = returnToDefaultPosition;
+            angleController_->enable();
         }
         break;
 
     case returnToDefaultPosition:
         if (positionController_->isAtGoal())
         {
-            changeStatus(firstPositionning);
+            status_ = firstPositionning;
+            angleController_->enable();
         }
     }
+}
+
+void RobotController::run()
+{
+    if (getActiveController()->isAtGoal())
+    {
+        changeStatus();
+    }
+
+    actions[status_](); // Not sure if it needs parentheses
 }
