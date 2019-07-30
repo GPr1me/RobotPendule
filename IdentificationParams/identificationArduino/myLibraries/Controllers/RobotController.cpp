@@ -69,10 +69,12 @@ RobotController::~RobotController()
 void RobotController::setupActions(int count, ...)
 {
     va_list args;
+    va_start(args, count);
     for(int i = 0; i < count; i++)
     {
         actions[i] = va_arg(args, Callback);
     }
+    va_end(args);
 
     // ********************************
     // * In case variable args breaks *
