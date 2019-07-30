@@ -1,8 +1,18 @@
 /* 
- * GRO 302 - Conception d'un robot mobile
- * Code de démarrage
- * Auteurs: Jean-Samuel Lauzon     
- * date: 1 mai 2019
+ * Fichier: main.cpp
+ * Auteur(s):
+ *   Lauzon,   Jean-Samuel
+ *   Cabana,   Gabriel      - cabg2101
+ *   Lalonde,  Philippe     - lalp2803
+ *   Pereira,  Santiago     - pers2113
+ *   Roy,      Olivier      - royo2206
+ *   Theroux,  Philippe     - thep3103
+ *   Thibault, Marc-Olivier - thim1611 
+ * Date(s):
+ *   2019-05-01 (Creation)
+ *   2019-07-30 (Derniere modification)
+ * Description: Code de demarrage du robot mobile.
+ * GRO302
 */
 
 /*------------------------------ Librairies ---------------------------------*/
@@ -27,8 +37,8 @@
 ArduinoX AX_;                // objet arduinoX
 MegaServo servo_;            // objet servomoteur
 VexQuadEncoder vexEncoder_;  // objet encodeur vex
-IMU9DOF imu_;                // objet imu
-// PID pid_;                   // objet PID
+//IMU9DOF imu_;                // objet imu
+//PID pid_;                    // objet PID
 RobotController *controller; // objet robotControlleur
 
 volatile bool shouldSend_  = false; // drapeau prêt à envoyer un message
@@ -46,9 +56,10 @@ float pulsePWM_     = 0;            // Amplitude de la tension au moteur [-1,1]
 //float Gxyz[3];                      // tableau pour giroscope
 //float Mxyz[3];                      // tableau pour magnetometre
 
-//identification des moteurs
+// Identification des moteurs
 enum engines{
-  REAR, FRONT
+  REAR,
+  FRONT
 };
 
 namespace {
@@ -61,9 +72,9 @@ namespace {
   int POTMIN = 90;
   int POTMAX = 1023;
   int POTAVG = 452;
-  double ANGULAR_RANGE = 197.0;      // °
-  double pot_ratio = (POTMAX - POTMIN) / ANGULAR_RANGE;
-  double pot_angle;                 // °
+  double ANGULAR_RANGE = 197.0; // °
+  double pot_ratio_ = (POTMAX - POTMIN) / ANGULAR_RANGE;
+  double pot_angle_; // °
 
   // Variables lineaires
   double current_position_;
@@ -76,10 +87,12 @@ namespace {
   
   // Variables de commandes
   double position_command_;
+  double angle_command_;
 }
 
 /*------------------------- Prototypes de fonctions -------------------------*/
 
+// Fonctions d'appels et d'envoi de messages
 void timerCallback();
 void startPulse();
 void endPulse();
@@ -87,54 +100,51 @@ void sendMsg();
 void readMsg();
 void serialEvent();
 
-//fonction pour oscillations
-void reachAngle(double angle);
+// Fonctions pour calcul de position
+double getAngle();
+
+// Fonctions pour calcul de vitesse
+double getLinearVelocity();
 
 // Fonctions pour le PID
 double computePIDPosition();
 double computePIDAngle();
-void PIDCommand(double cmd);
-void PIDgoalReached();
-
-void commandPos(double cmd); //fonction pour la commande position
-double getLinearVelocity();
-double getAngle();
-void goalReachedAngle(); //gestion pour maintenir l'angle pendant une distane donnee
+void PIDCommandPosition(double cmd);
 void PIDCommandAngle(double cmd);
-double getAngleSpeed();
-void computeAngleGoal();
+void goalReachedPosition();
+void goalReachedAngle(); 
+
+// Fonction pour le calcul de consommation
 void computePowerEnergy();
 
 /*---------------------------- fonctions "Main" -----------------------------*/
 
 void setup()
 {
-  Serial.begin(BAUD);     // initialisation de la communication serielle
-  AX_.init();             // initialisation de la carte ArduinoX
-  imu_.init();            // initialisation de la centrale inertielle
-  vexEncoder_.init(2, 3); // initialisation de l'encodeur VEX
-  // attache de l'interruption pour encodeur vex
+  Serial.begin(BAUD);     // Initialisation de la communication serielle
+  AX_.init();             // Initialisation de la carte ArduinoX
+  //imu_.init();            // Initialisation de la centrale inertielle
+  vexEncoder_.init(2, 3); // Initialisation de l'encodeur VEX
+  // Attache de l'interruption pour encodeur vex
   attachInterrupt(vexEncoder_.getPinInt(), [] { vexEncoder_.isr(); }, FALLING);
 
-  // Chronometre envoie message
+  // Chronometre pour l'envoi de messages
   timerSendMsg_.setDelay(UPDATE_PERIODE);
   timerSendMsg_.setCallback(timerCallback);
   timerSendMsg_.enable();
 
-  // Chronometre duration pulse
+  // Chronometre pour la duree de l'impulsion
   timerPulse_.setCallback(endPulse);
 
-  // Init controller
+  // Initialisation du controleur et des PID
   controller = new RobotController();
-
-  controller->setupPOS(computePIDPosition, PIDCommand, PIDgoalReached);
+  controller->setupPOS(computePIDPosition, PIDCommandPosition, goalReachedPosition);
   controller->setupANGLE(getAngle, computePIDAngle, PIDCommandAngle, goalReachedAngle);
 }
 
-/* Boucle principale (infinie)*/
+/* Boucle principale (infinie) */
 void loop()
 {
-
   if (shouldRead_)
   {
     readMsg();
@@ -148,11 +158,11 @@ void loop()
     startPulse();
   }
 
-  // mise a jour des chronometres
+  // Mise a jour des chronometres
   timerSendMsg_.update();
   timerPulse_.update();
 
-  // mise à jour du PID
+  // Mise a jour du PID
   controller->run();
 }
 
@@ -187,13 +197,14 @@ void sendMsg()
 {
   /* Envoit du message Json sur le port seriel */
   StaticJsonDocument<500> doc;
+  
   // Elements du message
-
   doc["time"]      = millis();
   doc["potVex"]    = analogRead(POTPIN);
   doc["encVex"]    = vexEncoder_.getCount();
   doc["goal"]      = controller->getActiveController->getGoal();
-  doc["cmd"]       = position_command_;
+  doc["cmd_pos"]   = position_command_;
+  doc["cmd_ang"]   = angle_command_;
   doc["motorPos"]  = current_position_;
   //doc["voltage"]   = AX_.getVoltage();
   //doc["current"]   = AX_.getCurrent();
@@ -212,7 +223,8 @@ void sendMsg()
 
   // Serialisation
   serializeJson(doc, Serial);
-  // Envoit
+
+  // Envoi
   Serial.println();
   shouldSend_ = false;
 }
@@ -241,13 +253,11 @@ void readMsg()
   {
     pulsePWM_ = doc["pulsePWM"].as<float>();
   }
-
   parse_msg = doc["pulseTime"];
   if (!parse_msg.isNull())
   {
     pulseTime_ = doc["pulseTime"].as<float>();
   }
-
   parse_msg = doc["pulse"];
   if (!parse_msg.isNull())
   {
@@ -265,12 +275,39 @@ double getLinearVelocity()
   previous_time_     = current_time_;
 
   return current_speed_;
-}  
+}
+
+// Fonction pour mesurer l'angle actuel
+double getAngle()
+{
+  // Lecture de tension recentree
+  int pot_read_ = analogRead(POTPIN);
+  pot_read_ -= POTAVG;
+
+  // Conversion tension a angle
+  pot_angle_ = -(pot_read_ / pot_ratio_);
+  
+  return pot_angle_;  
+}
+
+// Mesure la distance parcourue
+double computePIDPosition()
+{
+  current_position_ = AX_.readEncoder(REAR) / float(PASPARTOUR * RAPPORTVITESSE) * 2 * PI * 0.05;
+  return current_position_;
+}
+
+// Mesure l'angle du pendule
+double computePIDAngle()
+{
+  // TO DO
+  return 0;
+}
 
 // Fonctions pour envoyer la commande aux moteurs
-void PIDCommand(double cmd)
+void PIDCommandPosition(double cmd)
 {
-  //variable globale utilisee pour Json
+  // Variable globale utilisee pour Json
   position_command_ = cmd;
 
   if(position_command_ > 1)
@@ -290,60 +327,36 @@ void PIDCommand(double cmd)
   }
 }
 
-
-void PIDgoalReached()
+void PIDCommandAngle(double cmd)
 {
-  // To do
-}
+  // Variable globale utilisee pour Json
+  angle_command_ = cmd;
 
-void angleCommandFunc(double angle_command_)
-{
-  AX_.setMotorPWM(FRONT, angle_command_);
-  AX_.setMotorPWM(REAR, angle_command_);
-}
-
-// mesure la distance parcourue
-double computePIDPosition()
-{
-  current_position_ = AX_.readEncoder(REAR) / float(PASPARTOUR * RAPPORTVITESSE) * 2 * PI * 0.05;
-  return current_position_;
-}
-
-//mesure l'angle du pendule
-double computePIDAngle()
-{
-  double angle = getAngle();
-  if(angle < 2 && angle >= 0){
-    double sp = getAngleSpeed();
-    if(sp > -40 && sp < 40){
-      return angle + sp*0.1;
-    }
-    else{
-      return angle;
-    }  
+  if(angle_command_ > 1)
+  {
+    AX_.setMotorPWM(FRONT, -1);
+    AX_.setMotorPWM(REAR, 1);
   }
-  else if(angle > -2 && angle < 0){
-    double sp = getAngleSpeed();
-    if(sp > -40 && sp < 40){
-      return angle * 2 + sp*0.1;
-    }
-    else{
-      return angle;
-    }
+  else if(angle_command_ < -1)
+  {
+    AX_.setMotorPWM(FRONT, 1);
+    AX_.setMotorPWM(REAR, -1);
   }
-  return getAngle()+getAngleSpeed()*0;
+  else
+  {
+    AX_.setMotorPWM(FRONT, -angle_command_);
+    AX_.setMotorPWM(REAR, angle_command_);
+  }
 }
 
-//fonction pour mesurer l'angle actuel
-double getAngle(){
-  // Lecture de tension recentree
-  int pot_read = analogRead(POTPIN);
-  pot_read -= POTAVG;
+void goalReachedPosition()
+{
+  // TO DO
+}
 
-  // Conversion tension a angle
-  pot_angle = pot_read / -pot_ratio;
-  
-  return pot_angle;  
+void goalReachedAngle()
+{
+  // TO DO
 }
 
 // Fonction qui calcule la puissance et l'energie de la carte Arduino X
