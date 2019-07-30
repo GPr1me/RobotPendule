@@ -223,11 +223,6 @@ void sendMsg()
   // doc["gyroX"]            = imu_.getGyroX();
   // doc["gyroY"]            = imu_.getGyroY();
   // doc["gyroZ"]            = imu_.getGyroZ();
-<<<<<<< HEAD
-  doc["isGoal"]           = controller->getActiveController->isAtGoal();
-  doc["activeController"] = controller->getActiveController->ToString();
-=======
->>>>>>> 19f314a14c541b4d7d17b5b7f6f96a8244795104
   
 
   // Serialisation
