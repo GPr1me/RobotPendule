@@ -38,6 +38,30 @@ RobotController::~RobotController()
     }
 }
 
+<<<<<<< HEAD
+=======
+void RobotController::setupActions(int count, ...)
+{
+    va_list args;
+    va_start(args, count);
+    for(int i = 0; i < count; i++)
+    {
+        actions[i] = va_arg(args, Callback);
+    }
+    va_end(args);
+
+    // ********************************
+    // * In case variable args breaks *
+    // ********************************
+    // actions[0] = firstPositionning;
+    // actions[1] = oscillationIncrease;
+    // actions[2] = stepOverObstacle;
+    // actions[3] = oscillationDecrease;
+    // actions[4] = lastPositionning;
+    // actions[5] = returnToDefaultPosition;
+}
+
+>>>>>>> 87478811666ae4b80fd535dfdc413febb1efcb68
 void RobotController::setupPOS(double (*measurementFunc)(),
                                void (*commandFunc)(double),
                                void (*atGoalFunc)())
