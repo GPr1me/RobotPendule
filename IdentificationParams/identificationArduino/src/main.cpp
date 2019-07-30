@@ -223,7 +223,7 @@ void loop() {
   
   //test pour voir Vmax selon mesures
   //Serial.println(getVel());
-  if(!starto){
+  if(endRun){
     //arret a la fin
     AX_.setMotorPWM(REAR, 0);
     AX_.setMotorPWM(FRONT, 0);
@@ -242,6 +242,9 @@ void loop() {
     timerSendMsg_.update();
     timerPulse_.update();
     
+    if(starto){
+      endRun = false;
+    }
   }
   //run
   else{
@@ -575,7 +578,7 @@ void PIDgoalReached(){
       pid_pos.enable();
     }
     if(countA >= 5){
-      starto = false;
+      endRun = true;
     }
   }
   AX_.resetEncoder(0);
