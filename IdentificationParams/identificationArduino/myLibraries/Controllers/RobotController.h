@@ -13,6 +13,9 @@ Class to control the project robot controller
 #include <Controllers/Controller.h>
 #include <Controllers/AngleController.h>
 #include <Controllers/PositionController.h>
+#include <stdarg.h>
+
+typedef void (*Callback)();
 
 enum Status
 {
@@ -24,37 +27,61 @@ enum Status
     returnToDefaultPosition
 };
 
-class RobotController: public Controller
+const int NUMBER_OF_STEPS = 6;
+
+class RobotController : public Controller
 {
 public:
-    RobotController();
+    RobotController(void (*firstPositionning)(),
+                    void (*oscillationIncrease)(),
+                    void (*stepOverObstacle)(),
+                    void (*oscillationDecrease)(),
+                    void (*lastPositionning)(),
+                    void (*returnToDefaultPosition)());
+
     RobotController(PositionController *positionController,
-                    AngleController *angleController);
+                    AngleController *angleController,
+                    void (*firstPositionning)(),
+                    void (*oscillationIncrease)(),
+                    void (*stepOverObstacle)(),
+                    void (*oscillationDecrease)(),
+                    void (*lastPositionning)(),
+                    void (*returnToDefaultPosition)());
 
     ~RobotController();
 
     void setupPOS(double (*measurementFunc)(),
                   void (*commandFunc)(double),
                   void (*atGoalFunc)());
+
     void setupANGLE(double (*angleCommand)(),
                     double (*measurementFunc)(),
                     void (*commandFunc)(double),
                     void (*atGoalFunc)());
 
-    Controller* getActiveController();
+    // Not yet useful
+    // PositionController* getPositionController(){ return positionController_; };
+    // AngleController* getAngleController(){ return angleController_; };
 
-    Status currentStatus(){ return status_; };
-    void changeStatus(Status status);
+    Controller *getActiveController();
+
+    Status currentStatus() { return status_; };
+    void changeStatus();
 
     void run();
 
     String ToString();
 
 private:
+
+    void setupActions(int count, ...);
+
     PositionController *positionController_ = nullptr;
     AngleController *angleController_ = nullptr;
 
     bool runCompleted_;
     Status status_;
+
+    Callback actions[6];
 };
 #endif //ROBOTCONTROLLER_H

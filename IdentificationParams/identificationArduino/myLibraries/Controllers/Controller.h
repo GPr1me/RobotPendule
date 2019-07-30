@@ -14,6 +14,7 @@ class Controller
 {
 public:
     virtual void run() = 0;
+    virtual bool isAtGoal();
     String ToString() { return "contrôleur: "; };
 };
 #endif //CONTROLLER_H

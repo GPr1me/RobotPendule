@@ -34,61 +34,63 @@
 
 /*---------------------------- variables globales ---------------------------*/
 
-ArduinoX AX_;                // objet arduinoX
-MegaServo servo_;            // objet servomoteur
-VexQuadEncoder vexEncoder_;  // objet encodeur vex
+ArduinoX AX_;               // objet arduinoX
+MegaServo servo_;           // objet servomoteur
+VexQuadEncoder vexEncoder_; // objet encodeur vex
 //IMU9DOF imu_;                // objet imu
 //PID pid_;                    // objet PID
 RobotController *controller; // objet robotControlleur
 
-volatile bool shouldSend_  = false; // drapeau prêt à envoyer un message
-volatile bool shouldRead_  = false; // drapeau prêt à lire un message
+volatile bool shouldSend_ = false;  // drapeau prêt à envoyer un message
+volatile bool shouldRead_ = false;  // drapeau prêt à lire un message
 volatile bool shouldPulse_ = false; // drapeau pour effectuer un pulse
-volatile bool isInPulse_   = false; // drapeau pour effectuer un pulse
+volatile bool isInPulse_ = false;   // drapeau pour effectuer un pulse
 
-SoftTimer timerSendMsg_;            // chronometre d'envoie de messages
-SoftTimer timerPulse_;              // chronometre pour la duree d'un pulse
+SoftTimer timerSendMsg_; // chronometre d'envoie de messages
+SoftTimer timerPulse_;   // chronometre pour la duree d'un pulse
 
-uint16_t pulseTime_ = 0;            // temps dun pulse en ms
-float pulsePWM_     = 0;            // Amplitude de la tension au moteur [-1,1]
+uint16_t pulseTime_ = 0; // temps dun pulse en ms
+float pulsePWM_ = 0;     // Amplitude de la tension au moteur [-1,1]
 
 //float Axyz[3];                      // tableau pour accelerometre
 //float Gxyz[3];                      // tableau pour giroscope
 //float Mxyz[3];                      // tableau pour magnetometre
 
 // Identification des moteurs
-enum engines{
+enum engines
+{
   REAR,
   FRONT
 };
 
-namespace {
-  // Variables temporelles
-  double current_time_;
-  double previous_time_ = 0;
-  double time_interval_;
+namespace
+{
+// Variables temporelles
+double current_time_;
+double previous_time_ = 0;
+double time_interval_;
 
-  // Variables angulaires
-  int POTMIN = 90;
-  int POTMAX = 1023;
-  int POTAVG = 452;
-  double ANGULAR_RANGE = 197.0; // °
-  double pot_ratio_ = (POTMAX - POTMIN) / ANGULAR_RANGE;
-  double pot_angle_; // °
+// Variables angulaires
+int POTMIN = 90;
+int POTMAX = 1023;
+int POTAVG = 452;
+double ANGULAR_RANGE = 197.0; // °
+double pot_ratio_ = (POTMAX - POTMIN) / ANGULAR_RANGE;
+double pot_angle_; // °
 
-  // Variables lineaires
-  double current_position_;
-  double previous_position_ = 0;
-  double current_speed_;
+// Variables lineaires
+double current_position_;
+double previous_position_ = 0;
+double current_speed_;
 
-  // Variables de consommation
-  double power_ax_;
-  double energy_ax_;
-  
-  // Variables de commandes
-  double position_command_;
-  double angle_command_;
-}
+// Variables de consommation
+double power_ax_;
+double energy_ax_;
+
+// Variables de commandes
+double position_command_;
+double angle_command_;
+} // namespace
 
 /*------------------------- Prototypes de fonctions -------------------------*/
 
@@ -96,7 +98,7 @@ namespace {
 void timerCallback();
 void startPulse();
 void endPulse();
-void sendMsg(); 
+void sendMsg();
 void readMsg();
 void serialEvent();
 
@@ -112,7 +114,7 @@ double computePIDAngle();
 void PIDCommandPosition(double cmd);
 void PIDCommandAngle(double cmd);
 void goalReachedPosition();
-void goalReachedAngle(); 
+void goalReachedAngle();
 
 // Fonction pour le calcul de consommation
 void computePowerEnergy();
@@ -121,8 +123,8 @@ void computePowerEnergy();
 
 void setup()
 {
-  Serial.begin(BAUD);     // Initialisation de la communication serielle
-  AX_.init();             // Initialisation de la carte ArduinoX
+  Serial.begin(BAUD); // Initialisation de la communication serielle
+  AX_.init();         // Initialisation de la carte ArduinoX
   //imu_.init();            // Initialisation de la centrale inertielle
   vexEncoder_.init(2, 3); // Initialisation de l'encodeur VEX
   // Attache de l'interruption pour encodeur vex
@@ -197,29 +199,30 @@ void sendMsg()
 {
   /* Envoit du message Json sur le port seriel */
   StaticJsonDocument<500> doc;
-  
+
   // Elements du message
-  doc["time"]      = millis();
-  doc["potVex"]    = analogRead(POTPIN);
-  doc["encVex"]    = vexEncoder_.getCount();
-  doc["goal"]      = controller->getActiveController->getGoal();
-  doc["cmd_pos"]   = position_command_;
-  doc["cmd_ang"]   = angle_command_;
-  doc["motorPos"]  = current_position_;
-  //doc["voltage"]   = AX_.getVoltage();
-  //doc["current"]   = AX_.getCurrent();
-  doc["power"]     = power_ax_;
-  doc["energy"]    = energy_ax_;
-  doc["pulsePWM"]  = pulsePWM_;
-  doc["pulseTime"] = pulseTime_;
-  doc["inPulse"]   = isInPulse_;
-  //doc["accelX"]    = imu_.getAccelX();
-  //doc["accelY"]    = imu_.getAccelY();
-  //doc["accelZ"]    = imu_.getAccelZ();
-  //doc["gyroX"]     = imu_.getGyroX();
-  //doc["gyroY"]     = imu_.getGyroY();
-  //doc["gyroZ"]     = imu_.getGyroZ();
-  doc["isGoal"]    = controller->getActiveController->isAtGoal();
+  doc["time"]             = millis();
+  doc["potVex"]           = analogRead(POTPIN);
+  doc["encVex"]           = vexEncoder_.getCount();
+  doc["goal"]             = controller->getActiveController->getGoal();
+  doc["isGoal"]           = controller->getActiveController->isAtGoal();
+  doc["activeController"] = controller->getActiveController->ToString();
+  doc["cmd_pos"]          = position_command_;
+  doc["cmd_ang"]          = angle_command_;
+  doc["motorPos"]         = current_position_;
+  //doc["voltage"]          = AX_.getVoltage();
+  //doc["current"]          = AX_.getCurrent();
+  doc["power"]            = power_ax_;
+  doc["energy"]           = energy_ax_;
+  doc["pulsePWM"]         = pulsePWM_;
+  doc["pulseTime"]        = pulseTime_;
+  doc["inPulse"]          = isInPulse_;
+  //doc["accelX"]           = imu_.getAccelX();
+  //doc["accelY"]           = imu_.getAccelY();
+  //doc["accelZ"]           = imu_.getAccelZ();
+  //doc["gyroX"]            = imu_.getGyroX();
+  //doc["gyroY"]            = imu_.getGyroY();
+  //doc["gyroZ"]            = imu_.getGyroZ();
 
   // Serialisation
   serializeJson(doc, Serial);
@@ -265,14 +268,14 @@ void readMsg()
   }
 }
 
-// Fonction qui calcule la vitesse 
+// Fonction qui calcule la vitesse
 double getLinearVelocity()
 {
-  current_time_      = millis() / 1000;
-  time_interval_     = current_time_ - previous_time_;
-  current_speed_     = (current_position_ - previous_position_)/time_interval_;
+  current_time_ = millis() / 1000;
+  time_interval_ = current_time_ - previous_time_;
+  current_speed_ = (current_position_ - previous_position_) / time_interval_;
   previous_position_ = current_position_;
-  previous_time_     = current_time_;
+  previous_time_ = current_time_;
 
   return current_speed_;
 }
@@ -286,8 +289,8 @@ double getAngle()
 
   // Conversion tension a angle
   pot_angle_ = -(pot_read_ / pot_ratio_);
-  
-  return pot_angle_;  
+
+  return pot_angle_;
 }
 
 // Mesure la distance parcourue
@@ -310,12 +313,12 @@ void PIDCommandPosition(double cmd)
   // Variable globale utilisee pour Json
   position_command_ = cmd;
 
-  if(position_command_ > 1)
+  if (position_command_ > 1)
   {
     AX_.setMotorPWM(FRONT, -1);
     AX_.setMotorPWM(REAR, 1);
   }
-  else if(position_command_ < -1)
+  else if (position_command_ < -1)
   {
     AX_.setMotorPWM(FRONT, 1);
     AX_.setMotorPWM(REAR, -1);
@@ -332,12 +335,12 @@ void PIDCommandAngle(double cmd)
   // Variable globale utilisee pour Json
   angle_command_ = cmd;
 
-  if(angle_command_ > 1)
+  if (angle_command_ > 1)
   {
     AX_.setMotorPWM(FRONT, -1);
     AX_.setMotorPWM(REAR, 1);
   }
-  else if(angle_command_ < -1)
+  else if (angle_command_ < -1)
   {
     AX_.setMotorPWM(FRONT, 1);
     AX_.setMotorPWM(REAR, -1);
