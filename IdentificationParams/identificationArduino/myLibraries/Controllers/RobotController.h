@@ -19,11 +19,11 @@ typedef void (*Callback)();
 
 enum Status
 {
-    firstPositionning,
+    firstPositioning,
     oscillationIncrease,
     stepOverObstacle,
     oscillationDecrease,
-    lastPositionning,
+    lastPositioning,
     returnToDefaultPosition
 };
 
@@ -32,20 +32,20 @@ const int NUMBER_OF_STEPS = 6;
 class RobotController : public Controller
 {
 public:
-    RobotController(void (*firstPositionning)(),
+    RobotController(void (*firstPositioning)(),
                     void (*oscillationIncrease)(),
                     void (*stepOverObstacle)(),
                     void (*oscillationDecrease)(),
-                    void (*lastPositionning)(),
+                    void (*lastPositioning)(),
                     void (*returnToDefaultPosition)());
 
     RobotController(PositionController *positionController,
                     AngleController *angleController,
-                    void (*firstPositionning)(),
+                    void (*firstPositioning)(),
                     void (*oscillationIncrease)(),
                     void (*stepOverObstacle)(),
                     void (*oscillationDecrease)(),
-                    void (*lastPositionning)(),
+                    void (*lastPositioning)(),
                     void (*returnToDefaultPosition)());
 
     ~RobotController();

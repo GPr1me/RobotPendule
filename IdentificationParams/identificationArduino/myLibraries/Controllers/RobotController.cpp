@@ -7,11 +7,11 @@ Class to control the project robot mouvements
 
 #include "RobotController.h"
 
-RobotController::RobotController(void (*firstPositionning)(),
+RobotController::RobotController(void (*firstPositioning)(),
                                  void (*oscillationIncrease)(),
                                  void (*stepOverObstacle)(),
                                  void (*oscillationDecrease)(),
-                                 void (*lastPositionning)(),
+                                 void (*lastPositioning)(),
                                  void (*returnToDefaultPosition)())
 {
     positionController_ = new PositionController();
@@ -20,20 +20,20 @@ RobotController::RobotController(void (*firstPositionning)(),
     runCompleted_ = false;
 
     setupActions(NUMBER_OF_STEPS,
-                 firstPositionning,
+                 firstPositioning,
                  oscillationIncrease,
                  stepOverObstacle,
                  oscillationDecrease,
-                 lastPositionning,
+                 lastPositioning,
                  returnToDefaultPosition);
 }
 RobotController::RobotController(PositionController *positionController,
                                  AngleController *angleController,
-                                 void (*firstPositionning)(),
+                                 void (*firstPositioning)(),
                                  void (*oscillationIncrease)(),
                                  void (*stepOverObstacle)(),
                                  void (*oscillationDecrease)(),
-                                 void (*lastPositionning)(),
+                                 void (*lastPositioning)(),
                                  void (*returnToDefaultPosition)())
 {
     positionController_ = positionController;
@@ -46,11 +46,11 @@ RobotController::RobotController(PositionController *positionController,
     runCompleted_ = false;
 
     setupActions(NUMBER_OF_STEPS,
-                 firstPositionning,
+                 firstPositioning,
                  oscillationIncrease,
                  stepOverObstacle,
                  oscillationDecrease,
-                 lastPositionning,
+                 lastPositioning,
                  returnToDefaultPosition);
 }
 
@@ -79,11 +79,11 @@ void RobotController::setupActions(int count, ...)
     // ********************************
     // * In case variable args breaks *
     // ********************************
-    // actions[0] = firstPositionning;
+    // actions[0] = firstPositioning;
     // actions[1] = oscillationIncrease;
     // actions[2] = stepOverObstacle;
     // actions[3] = oscillationDecrease;
-    // actions[4] = lastPositionning;
+    // actions[4] = lastPositioning;
     // actions[5] = returnToDefaultPosition;
 }
 
@@ -131,7 +131,7 @@ void RobotController::changeStatus()
 {
     switch (status_)
     {
-    case firstPositionning:
+    case firstPositioning:
 
         if (positionController_->isAtGoal())
         {
@@ -159,12 +159,12 @@ void RobotController::changeStatus()
     case oscillationDecrease:
         if (angleController_->isAtGoal())
         {
-            status_ = lastPositionning;
+            status_ = lastPositioning;
             positionController_->enable();
         }
         break;
 
-    case lastPositionning:
+    case lastPositioning:
         if (positionController_->isAtGoal())
         {
             status_ = returnToDefaultPosition;
@@ -175,7 +175,7 @@ void RobotController::changeStatus()
     case returnToDefaultPosition:
         if (positionController_->isAtGoal())
         {
-            status_ = firstPositionning;
+            status_ = firstPositioning;
             angleController_->enable();
         }
     }
