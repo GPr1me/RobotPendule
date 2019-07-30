@@ -15,7 +15,6 @@ class PID_angle : public PID
 {
     public:
     void run();
-    double getAngle();
 
     void setAngleCommand(double(*f)()){ angleCommand_ = f; };
     void setAtGoalFunc(void (*f)()){ atGoalFunc_ = f; };
