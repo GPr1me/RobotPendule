@@ -16,8 +16,6 @@ MainWindow::MainWindow(int updateRate, QWidget *parent):
     chart_.legend()->hide();
     chart_.addSeries(&series_);
 
-
-
     //ui->graphicsView->setScene(&scene);
 
     // Fonctions de connections events/slots
@@ -155,17 +153,41 @@ void MainWindow::changeJsonKeyValue(){
     series_.clear();
     JsonKey_ = ui->JsonKey->text();
 }
+
 void MainWindow::sendPID(){
     // Fonction SLOT pour envoyer les paramettres de pulse
     double goal = ui->lineEdit_DesVal->text().toDouble();
+    double Kp = ui->lineEdit_Kp->text().toDouble();
+    double Ki = ui->lineEdit_Ki->text().toDouble();
+    double Kd = ui->lineEdit_Kd->text().toDouble();
+    double thresh = ui->lineEdit_Thresh->text().toDouble();
+    // pour minimiser le nombre de decimales( QString::number)
+
+    QJsonArray array = { QString::number(Kp, 'f', 2),
+                         QString::number(Ki, 'f', 2),
+                         QString::number(Kd, 'f', 2),
+                         QString::number(thresh, 'f', 2),
+                         QString::number(goal, 'f', 2)
+                       };
     QJsonObject jsonObject
-    {// pour minimiser le nombre de decimales( QString::number)
-        {"setGoal", QString::number(goal, 'f', 2)}
+    {
+        {"setGoal", array}
     };
     QJsonDocument doc(jsonObject);
     QString strJson(doc.toJson(QJsonDocument::Compact));
     sendMessage(strJson);
 }
+//void MainWindow::sendPID(){
+//    // Fonction SLOT pour envoyer les paramettres de pulse
+//    double goal = ui->lineEdit_DesVal->text().toDouble();
+//    QJsonObject jsonObject
+//    {// pour minimiser le nombre de decimales( QString::number)
+//        {"setGoal", QString::number(goal, 'f', 2)}
+//    };
+//    QJsonDocument doc(jsonObject);
+//    QString strJson(doc.toJson(QJsonDocument::Compact));
+//    sendMessage(strJson);
+//}
 
 void MainWindow::sendPulseSetting(){
     // Fonction SLOT pour envoyer les paramettres de pulse
