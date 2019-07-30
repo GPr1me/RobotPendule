@@ -32,7 +32,8 @@ IMU9DOF imu_;                       // objet imu
 //declaration des objets PID
 PID pid_;                           // objet PID
 PID pid_pos;
-AngleController pid_ang;  //TODO
+PID pid_ang;
+//AngleController pid_ang;  //TODO
 
 volatile bool shouldSend_  = false; // drapeau prêt à envoyer un message
 volatile bool shouldRead_  = false; // drapeau prêt à lire un message
@@ -70,6 +71,9 @@ namespace {
   double cur_v;
   double cur_T;
   double lastT = 0;
+  double prev_Ti;
+  double prev_phi;
+  double speed_phi;
   float  inter_time;
   double dist_;
 
@@ -84,6 +88,8 @@ namespace {
   bool wFlag;
   bool firstRun;
   bool endRun;
+
+  int countA;
 }
 
 /*------------------------- Prototypes de fonctions -------------------------*/
@@ -112,7 +118,7 @@ double getVel();
 double getAngle();
 void goalReachedAngle(); //gestion pour maintenir l'angle pendant une distane donnee
 void PIDcommandAngle(double cmd);
-
+double getAngleSpeed();
 void computeAngleGoal();
 void computePowerEnergy();
 
@@ -162,13 +168,13 @@ void setup() {
   //pid_pos.enable();
 
   //PID pour angle
-  pid_ang.setGains(0.05, 0.0001, 0.001); //gains actuels proviennent de la simulation (valeurs a verifier) 
+  pid_ang.setGains(0.008, 0, 0.0002); //gains actuels proviennent de la simulation (valeurs a verifier) 
     // Attache des fonctions de retour
   pid_ang.setMeasurementFunc(computePIDAng);
-  pid_ang.setCommandFunc(AngleCommand);
+  pid_ang.setCommandFunc(PIDcommandAngle);
   pid_ang.setAtGoalFunc(goalReachedAngle);
-  pid_ang.setEpsilon(3); //TODO: valeur par defaut en ce moment. Effet a verifier
-  pid_ang.setPeriod(4);
+  pid_ang.setEpsilon(1); //TODO: valeur par defaut en ce moment. 
+  pid_ang.setPeriod(20);
   //pid_ang.setGoal(10);
   //pid_ang.enable();
 
@@ -184,10 +190,14 @@ void setup() {
 
   //set valeur initiales
   wFlag = true;
-  firstRun = true;
+  firstRun = false;
   endRun = false;
   acmd = 0;
   cur_T = millis() / 1000.0;
+  countA = 0;
+
+  prev_Ti = 0;
+  prev_phi = 0;
 }
 
 /* Boucle principale (infinie)*/
@@ -221,7 +231,7 @@ void loop() {
     unsigned long ctime = (millis() - timer);
     
     //code test pour activer le electroaimant pendant 10 secondes
-    if(10000 >  ctime){
+    if(20000 >  ctime){
       digitalWrite(MAGPIN, 1);
     }
     else{
@@ -243,17 +253,22 @@ void loop() {
     timerSendMsg_.update();
     timerPulse_.update();
     */
-    //test controleur pendule
+    //test controleur pendule(baseball game)
     if(wFlag){
-      reachAngle(-20);
+      reachAngle(-30);
       wFlag = false;
     }
     if(firstRun){
-      pid_pos.setGoal(0.9);
+      pid_pos.setGoal(0);//test pos 0 to check only angle
       pid_pos.enable();
       firstRun = false;
     }
     pid_pos.run();
+    pid_ang.run();
+    // if(20 < millis() - timer){
+    //   Serial.println(getAngleSpeed());
+    //   timer = millis();
+    // }
   }
   /*if(40 < getAngle()){
     pid_ang.run();
@@ -396,6 +411,10 @@ void reachAngle(double angle){
       AX_.setMotorPWM(REAR, scmd);
       AX_.setMotorPWM(FRONT, -scmd);
     }
+    /*while(getAngle() < angle/2){
+
+
+    }*/
   }
   else{
     while(getAngle() <= angle){
@@ -404,10 +423,15 @@ void reachAngle(double angle){
       AX_.setMotorPWM(REAR, scmd);
       AX_.setMotorPWM(FRONT, -scmd);
     }
+    /*while(getAngle() > angle/2){
+
+
+    }*/
   }
   AX_.setMotorPWM(REAR, 0);
   AX_.setMotorPWM(FRONT, 0);
   wFlag = false;
+  firstRun = true;
   /*if(firstRun){
     pid_pos.setGoal(0.9);
     pid_pos.enable();
@@ -416,6 +440,16 @@ void reachAngle(double angle){
 }
 
 // Fonctions pour le PID
+
+//calcul de la vitesse angulaire
+double getAngleSpeed(){
+  double cur_phi = getAngle();
+  double cur_Ti = millis();
+  speed_phi = (cur_phi - prev_phi)/((cur_Ti - prev_Ti)/1000.0);
+  prev_Ti = cur_Ti;
+  prev_phi = cur_phi;
+  return speed_phi;
+}
 
 double pulseToMeters(){
     //3200 pulses par tour de roue
@@ -448,7 +482,26 @@ double computePIDPos(){
 }
 //mesure l'angle du pendule
 double computePIDAng(){
-  return getAngle();
+  double angle = getAngle();
+  if(angle < 2 && angle >= 0){
+    double sp = getAngleSpeed();
+    if(sp > -40 && sp < 40){
+      return angle + sp*0.1;
+    }
+    else{
+      return angle;
+    }  
+  }
+  else if(angle > -2 && angle < 0){
+    double sp = getAngleSpeed();
+    if(sp > -40 && sp < 40){
+      return angle * 2 + sp*0.1;
+    }
+    else{
+      return angle;
+    }
+  }
+  return getAngle()+getAngleSpeed()*0;
 }
 
 void PIDcommand(double cmd){
@@ -471,8 +524,8 @@ void PIDcommand(double cmd){
 
 //lorsque objectif atteint arrete au complet et recommence les encodeurs pour mesurer une nouvelle distance
 void PIDgoalReached(){
-  AX_.setMotorPWM(0, 0);
-  AX_.setMotorPWM(1, 0);
+  // AX_.setMotorPWM(0, 0);
+  // AX_.setMotorPWM(1, 0);
   //Serial.println("Valeur de distance mesuree:");
   //Serial.println(pulseToMeters());
   AX_.resetEncoder(1);
@@ -484,12 +537,20 @@ void PIDgoalReached(){
 
 //gestion desiree, coninuer a maintenir l'angle pendant une distance voulue
 void goalReachedAngle(){
-  AX_.setMotorPWM(0, 0);
-  AX_.setMotorPWM(1, 0);
-  //Serial.println("Valeur de distance mesuree:");
-  //Serial.println(pulseToMeters());
-  AX_.resetEncoder(1);
-  endRun = 1;
+
+  /*if(countA < 5){
+    pid_ang.setGoal(0);
+    pid_ang.enable();
+    countA++;
+  }
+  else{*/
+    AX_.setMotorPWM(0, 0);
+    AX_.setMotorPWM(1, 0);
+    //Serial.println("Valeur de distance mesuree:");
+    //Serial.println(pulseToMeters());
+    AX_.resetEncoder(1);
+    endRun = 1;
+  // }
 }
 
 //fonction pour mesurer l'angle actuel
@@ -507,13 +568,18 @@ double getAngle(){
 void PIDcommandAngle(double cmd){
   //acmd utilise pour pouvoir voir la valeur de la cmd envoyee
   //addition afin d'essayer de maintenir la vitesse une fois la commande rendu a 0
+  
   acmd = cmd;
-  //Comportement du PID a verifier
+  //Comportement du PID  
   if(acmd > 1){
+    //tWave = millis() - initTW;
+    //double scmd = 0.4*sin(4.8*tWave/1000.0);
     AX_.setMotorPWM(0, 1);
     AX_.setMotorPWM(1, -1);
   }
   else if(acmd < -1){
+    //tWave = millis() - initTW;
+    //double scmd = 0.4*sin(4.8*tWave/1000.0);
     AX_.setMotorPWM(0, -1);
     AX_.setMotorPWM(1, 1);
   }
