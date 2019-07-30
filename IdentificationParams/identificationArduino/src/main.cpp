@@ -58,13 +58,16 @@ enum engines{
 namespace {
   int POTMIN = 90;
   int POTMAX = 1023;
-  int POTAVG = 559;
+  int POTAVG = 450; //559
   double ANGULAR_RANGE = 197.0;      // °
   double pot_angle;                 // °
 
   double hauteur_obstacle;          // cm
+  double largeur_foret;             // cm
+  double distance_boite;            // cm
   double longueur_pendule = 0.548;  // m
   double angle_goal;                // °
+  bool starto;
 
   double prev_p = 0;
   double cur_p;
@@ -90,6 +93,14 @@ namespace {
   bool endRun;
 
   int countA;
+  unsigned long timerAngle;
+  unsigned long initTW; // timer pour oscillations
+  bool beginO;          //bool pour start timer
+  
+  //controle oscillation
+  bool noSwing;
+  bool hasTree;
+
 }
 
 /*------------------------- Prototypes de fonctions -------------------------*/
@@ -137,10 +148,10 @@ void setup() {
   // Chronometre envoie message
   timerSendMsg_.setDelay(UPDATE_PERIODE);
   timerSendMsg_.setCallback(timerCallback);
-  /*timerSendMsg_.enable();
+  timerSendMsg_.enable();
 
   // Chronometre duration pulse
-  timerPulse_.setCallback(endPulse);*/
+  timerPulse_.setCallback(endPulse);
   
   // Initialisation du PID
   /* Sample initialisation
@@ -155,7 +166,7 @@ void setup() {
   */
 
  //PID pour la position
-  pid_pos.setGains(5, 0.02 , 0); //gains actuels proviennent de la simulation (valeurs a verifier) 
+  pid_pos.setGains(2, 0.02 , 0); //gains de la simulation 5, 0.02 , 0 
     // Attache des fonctions de retour
   pid_pos.setMeasurementFunc(computePIDPos);
   pid_pos.setCommandFunc(PIDcommand);
@@ -168,7 +179,7 @@ void setup() {
   //pid_pos.enable();
 
   //PID pour angle
-  pid_ang.setGains(0.008, 0, 0.0002); //gains actuels proviennent de la simulation (valeurs a verifier) 
+  pid_ang.setGains(0.008, 0.0002, 0); // test: 0.008, 0, 0.0002 autre gains de la simulation (valeurs a verifier) 
     // Attache des fonctions de retour
   pid_ang.setMeasurementFunc(computePIDAng);
   pid_ang.setCommandFunc(PIDcommandAngle);
@@ -198,6 +209,12 @@ void setup() {
 
   prev_Ti = 0;
   prev_phi = 0;
+  beginO = 1;
+  noSwing = 1;
+  starto = false;
+  
+  //active aimant
+  digitalWrite(MAGPIN, 1);
 }
 
 /* Boucle principale (infinie)*/
@@ -206,7 +223,7 @@ void loop() {
   
   //test pour voir Vmax selon mesures
   //Serial.println(getVel());
-  if(endRun){
+  if(!starto){
     //arret a la fin
     AX_.setMotorPWM(REAR, 0);
     AX_.setMotorPWM(FRONT, 0);
@@ -231,12 +248,12 @@ void loop() {
     unsigned long ctime = (millis() - timer);
     
     //code test pour activer le electroaimant pendant 10 secondes
-    // if(20000 >  ctime){
-    //   digitalWrite(MAGPIN, 1);
-    // }
-    // else{
-    //   digitalWrite(MAGPIN, 0);
-    // }
+    /* if(20000 >  ctime){
+      digitalWrite(MAGPIN, 1);
+    }
+    else{
+      digitalWrite(MAGPIN, 0);
+    }*/
     
     // Comm avec le PI
     if(shouldRead_){
@@ -254,27 +271,27 @@ void loop() {
     timerPulse_.update();
 
     // test controleur pendule(baseball game)
-    // if(wFlag){
-    //   reachAngle(-30);
-    //   wFlag = false;
-    // }
-    // if(firstRun){
-    //   pid_pos.setGoal(0);//test pos 0 to check only angle
-    //   pid_pos.enable();
-    //   firstRun = false;
-    // }
-    // pid_pos.run();
-    // pid_ang.run();
-  }
-
-  if(!pid_pos.isAtGoal())
-  {
+    //wFlag mis a false quand objectif atteint
+    if(wFlag){
+      reachAngle(-30);
+    }
+    if(firstRun){
+      pid_pos.setGoal(1.1);//test pos 0 to check only angle
+      pid_pos.enable();
+      firstRun = false;
+    }
     pid_pos.run();
-  }
-  else if (!pid_ang.isAtGoal())
-  {
     pid_ang.run();
   }
+
+  // if(!pid_pos.isAtGoal())
+  // {
+  //   pid_pos.run();
+  // }
+  // else if (!pid_ang.isAtGoal())
+  // {
+  //   pid_ang.run();
+  // }
 }
 
 /*---------------------------Definition de fonctions ------------------------*/
@@ -308,11 +325,13 @@ void sendMsg(){
   // Elements du message
 
   doc["cmd"] = tcmd;
+  doc["acmd"] = acmd;
+  doc["globalPos"] = AX_.readEncoder(1) / float(PASPARTOUR * RAPPORTVITESSE) * 2 * PI * 0.05;
   doc["time"] = millis();
-  doc["potVex"] = pot_angle;
-
+  doc["potVex"] = getAngle();
   //doc["encVex"] = vexEncoder_.getCount();
-  doc["goal"]      = pid_pos.getGoal();
+  doc["Posgoal"]   = pid_pos.getGoal();
+  doc["Anggoal"]   = pid_ang.getGoal();
   doc["motorPos"]  = dist_;
   doc["power"]     = power_ax;
   doc["energy"]    = energy_ax;
@@ -325,7 +344,8 @@ void sendMsg(){
   //doc["gyroX"]     = imu_.getGyroX();
   //doc["gyroY"]     = imu_.getGyroY();
   //doc["gyroZ"]     = imu_.getGyroZ();
-  doc["isGoal"]   = pid_pos.isAtGoal();
+  doc["PosGoal"]   = pid_pos.isAtGoal();
+  doc["AngGoal"]   = pid_ang.isAtGoal();
 
   // Serialisation
   serializeJson(doc, Serial);
@@ -356,6 +376,16 @@ void readMsg(){
      hauteur_obstacle = doc["hauteur"].as<float>();
   }
 
+  parse_msg = doc["largeur"];
+  if(!parse_msg.isNull()){
+     largeur_foret = doc["largeur"].as<float>();
+  }
+
+  parse_msg = doc["distance"];
+  if(!parse_msg.isNull()){
+     distance_boite = doc["distance"].as<float>();
+  }
+
   parse_msg = doc["pulsePWM"];
   if(!parse_msg.isNull()){
      pulsePWM_ = doc["pulsePWM"].as<float>();
@@ -369,6 +399,20 @@ void readMsg(){
   parse_msg = doc["pulse"];
   if(!parse_msg.isNull()){
      shouldPulse_ = doc["pulse"];
+  }
+
+  parse_msg = doc["setGoal"];
+  if(!parse_msg.isNull()){
+    pid_pos.disable();
+    pid_pos.setGains(doc["setGoal"][0], doc["setGoal"][1], doc["setGoal"][2]);
+    pid_pos.setEpsilon(doc["setGoal"][3]);
+    pid_.setGoal(doc["setGoal"][4]);
+    pid_.enable();
+  }
+
+  parse_msg = doc["start"];
+  if(!parse_msg.isNull()){
+     starto = doc["start"];
   }
 }
 
@@ -386,13 +430,24 @@ void computePowerEnergy(){
 //fonction pour osciller a un angle voulu
 void reachAngle(double angle){
   // pid_pos.disable();
-  unsigned long initTW = millis();
+  if(beginO){
+    initTW = millis();
+    beginO = false;
+  }
+  tWave = millis() - initTW;
+  double scmd = 0.4*sin(4.8*tWave/1000.0);
+  AX_.setMotorPWM(REAR, scmd);
+  AX_.setMotorPWM(FRONT, -scmd);
   if(angle < 0){
-    while(getAngle() >= angle){
-      tWave = millis() - initTW;
-      double scmd = 0.4*sin(4.8*tWave/1000.0);
-      AX_.setMotorPWM(REAR, scmd);
-      AX_.setMotorPWM(FRONT, -scmd);
+    
+    if(getAngle() < angle){
+      wFlag = 0;
+      AX_.setMotorPWM(REAR, 0);
+      AX_.setMotorPWM(FRONT, 0);
+      wFlag = false;
+      firstRun = true;
+      countA++;
+      beginO = true;
     }
     /*while(getAngle() < angle/2){
 
@@ -400,21 +455,18 @@ void reachAngle(double angle){
     }*/
   }
   else{
-    while(getAngle() <= angle){
-      tWave = millis() - initTW;
-      double scmd = 0.4*sin(4.8*tWave/1000.0);
-      AX_.setMotorPWM(REAR, scmd);
-      AX_.setMotorPWM(FRONT, -scmd);
+    if(getAngle() > angle){
+      wFlag = 0;
+      AX_.setMotorPWM(REAR, 0);
+      AX_.setMotorPWM(FRONT, 0);
+      wFlag = false;
+      firstRun = true;
+      countA++;
+      beginO = true;
     }
-    /*while(getAngle() > angle/2){
-
-
-    }*/
+    
   }
-  AX_.setMotorPWM(REAR, 0);
-  AX_.setMotorPWM(FRONT, 0);
-  wFlag = false;
-  firstRun = true;
+  
   /*if(firstRun){
     pid_pos.setGoal(0.9);
     pid_pos.enable();
@@ -507,34 +559,57 @@ void PIDcommand(double cmd){
 
 //lorsque objectif atteint arrete au complet et recommence les encodeurs pour mesurer une nouvelle distance
 void PIDgoalReached(){
-  // AX_.setMotorPWM(0, 0);
-  // AX_.setMotorPWM(1, 0);
   //Serial.println("Valeur de distance mesuree:");
   //Serial.println(pulseToMeters());
-  AX_.resetEncoder(1);
   
-  pid_ang.setGoal(0);
-  pid_ang.enable();
+  pid_pos.disable();
+  if(countA >= 3){
+    AX_.setMotorPWM(0, 0);
+    AX_.setMotorPWM(1, 0);
+    timerAngle = millis();
+    while(2000 > millis() - timerAngle){
+      digitalWrite(MAGPIN, 0);
+    }
+    if(countA < 4){
+      pid_pos.setGoal(-1.1);
+      pid_pos.enable();
+    }
+    if(countA >= 5){
+      starto = false;
+    }
+  }
+  AX_.resetEncoder(0);
+  //attends a que l'angle soit negatif
+  while(getAngle() < 0){
+    if(countA > 3){
+      break;
+    }
+  }
+  countA++;
+  if(countA < 3){
+    pid_ang.setGoal(0);
+    pid_ang.enable();
+  }
   
 }
 
 //gestion desiree, coninuer a maintenir l'angle pendant une distance voulue
 void goalReachedAngle(){
-
-  /*if(countA < 5){
+  double sA = getAngleSpeed();
+  if(sA > 90 || sA < -90){
     pid_ang.setGoal(0);
     pid_ang.enable();
-    countA++;
+    // countA++;
   }
-  else{*/
+  else{
     AX_.setMotorPWM(0, 0);
     AX_.setMotorPWM(1, 0);
     //Serial.println("Valeur de distance mesuree:");
     //Serial.println(pulseToMeters());
-    AX_.resetEncoder(1);
+    pid_pos.setGoal(0);
     pid_pos.enable();
-    endRun = 1;
-  // }
+    countA++;
+  }
 }
 
 //fonction pour mesurer l'angle actuel
@@ -552,9 +627,16 @@ double getAngle(){
 void PIDcommandAngle(double cmd){
   //acmd utilise pour pouvoir voir la valeur de la cmd envoyee
   //addition afin d'essayer de maintenir la vitesse une fois la commande rendu a 0
-  
+  if(getAngle() < -1){
+    noSwing = false;
+  }
+
   acmd = cmd;
-  //Comportement du PID  
+  //Comportement du PID
+  if(noSwing){
+    acmd = acmd/2;
+  }
+
   if(acmd > 1){
     //tWave = millis() - initTW;
     //double scmd = 0.4*sin(4.8*tWave/1000.0);
