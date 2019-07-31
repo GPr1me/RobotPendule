@@ -104,6 +104,9 @@ namespace {
   //timer pour test comportement du electroaimant
   unsigned long timer;  
   unsigned long timer2;
+
+  //variable pour mettre un delai avant le debut de 2 secondes
+  bool doT;
 }
 
 /*------------------------- Prototypes de fonctions -------------------------*/
@@ -137,7 +140,6 @@ void computeAngleGoal();
 void computePowerEnergy();
 
 /*---------------------------- fonctions "Main" -----------------------------*/
-
 
 void setup() {
   Serial.begin(BAUD);               // initialisation de la communication serielle
@@ -221,7 +223,7 @@ void setup() {
   //active aimant
   digitalWrite(MAGPIN, 1);
 }
-bool doT;
+
 /* Boucle principale (infinie)*/
 void loop() {
 
@@ -547,25 +549,25 @@ double computePIDPos(){
 }
 //mesure l'angle du pendule
 double computePIDAng(){
-  double angle = getAngle();
-  if(angle < 2 && angle >= 0){
-    double sp = getAngleSpeed();
-    if(sp > -40 && sp < 40){
-      return angle + sp*0.1;
-    }
-    else{
-      return angle;
-    }  
-  }
-  else if(angle > -2 && angle < 0){
-    double sp = getAngleSpeed();
-    if(sp > -40 && sp < 40){
-      return angle * 2 + sp*0.1;
-    }
-    else{
-      return angle;
-    }
-  }
+  // double angle = getAngle();
+  // if(angle < 2 && angle >= 0){
+  //   double sp = getAngleSpeed();
+  //   if(sp > -40 && sp < 40){
+  //     return angle + sp*0.1;
+  //   }
+  //   else{
+  //     return angle;
+  //   }  
+  // }
+  // else if(angle > -2 && angle < 0){
+  //   double sp = getAngleSpeed();
+  //   if(sp > -40 && sp < 40){
+  //     return angle * 2 + sp*0.1;
+  //   }
+  //   else{
+  //     return angle;
+  //   }
+  // }
   return getAngle();
 }
 
@@ -663,6 +665,8 @@ void PIDcommandAngle(double cmd){
 
   acmd = cmd;
   //Comportement du PID
+  
+  //empeche le pendule de revenir trop au premier retour
   if(noSwing){
     acmd = acmd/2;
   }
