@@ -454,7 +454,7 @@ void computeAngleGoal(){
 
 void computePowerEnergy(){
   power_ax = AX_.getVoltage() * AX_.getCurrent();
-  energy_ax += power_ax / (millis() - timer2);
+  energy_ax += power_ax *(millis() - timer2)/1000;
 }
 
 //fonction pour osciller a un angle voulu
