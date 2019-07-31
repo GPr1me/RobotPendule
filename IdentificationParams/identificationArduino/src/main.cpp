@@ -58,7 +58,7 @@ enum engines{
 namespace {
   int POTMIN = 90;
   int POTMAX = 1023;
-  int POTAVG = 450; //559
+  int POTAVG = 448; //559  --450
   double ANGULAR_RANGE = 197.0;      // °
   double pot_angle;                 // °
 
@@ -175,7 +175,7 @@ void setup() {
   pid_pos.setMeasurementFunc(computePIDPos);
   pid_pos.setCommandFunc(PIDcommand);
   pid_pos.setAtGoalFunc(PIDgoalReached);
-  pid_pos.setEpsilon(0.015); //TODO: valeur par defaut en ce moment. Effet a verifier
+  pid_pos.setEpsilon(0.013); //T0.01
   pid_pos.setPeriod(100); //1000 / 10: le pid est ajuste 10 fois par seconde (valeur peut etre changee) 
 
   //pour test sans qt
@@ -357,9 +357,10 @@ void sendMsg(){
 
   doc["cmd"] = tcmd;
   doc["acmd"] = acmd;
-  doc["globalPos"] = AX_.readEncoder(1) / float(PASPARTOUR * RAPPORTVITESSE) * 2 * PI * 0.05;
+  doc["globalPos"] = AX_.readEncoder(1) / float(PASPARTOUR * RAPPORTVITESSE) * -2 * PI * 0.05;
   doc["time"] = millis();
   doc["potVex"] = getAngle();
+  doc["angSpeed"] = getAngleSpeed();
   //doc["encVex"] = vexEncoder_.getCount();
   doc["Posgoal"]   = pid_pos.getGoal();
   doc["Anggoal"]   = pid_ang.getGoal();
@@ -467,7 +468,7 @@ void reachAngle(double angle){
     beginO = false;
   }
   tWave = millis() - initTW;
-  double scmd = 0.4*sin(4.8*tWave/1000.0);
+  double scmd = 0.4*sin(4.8*tWave/1000.0); //0.4
   AX_.setMotorPWM(REAR, scmd);
   AX_.setMotorPWM(FRONT, -scmd);
   if(angle < 0){
@@ -602,11 +603,12 @@ void PIDgoalReached(){
     digitalWrite(MAGPIN, 0);
     
     if(countA < 4){
-      pid_pos.setGoal(-1.1);
+      pid_pos.setGoal(-1.11);
       pid_pos.enable();
     }
     if(countA >= 4){
       starto = false;
+      digitalWrite(MAGPIN, 1); //ligne pour activer l'aimant
     }
   }
   AX_.resetEncoder(0);
